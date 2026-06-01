@@ -161,6 +161,6 @@ hyper-xl is distributed under the **HyperEZ Source-Available License** (see [LIC
 - **Evaluation, learning, and non-commercial use:** permitted at no cost.
 - **Commercial or production use:** requires a separate commercial license.
 
-To obtain a commercial license, or for any licensing question, contact **ai@hyperez.io**.
+To obtain a commercial license, or for any licensing question, contact **support@hyperez.io**.
 
 Copyright (c) 2026 HyperEZ Inc. (주식회사 하이퍼이지). All rights reserved.

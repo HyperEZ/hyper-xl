@@ -3,7 +3,7 @@ Copyright (c) 2026 HyperEZ Inc. (주식회사 하이퍼이지). All rights reser
 
 요약(비공식): 평가·학습·비상업 용도로는 자유롭게 사용할 수 있습니다. 상업적/
 프로덕션 용도로 사용하려면 반드시 별도의 상업용 라이선스를 문의해야 합니다.
-문의: ai@hyperez.io
+문의: support@hyperez.io
 
 This license governs use of the accompanying software distributed under the
 npm package name "hyper-xl" and from https://github.com/HyperEZ/hyper-xl (the
@@ -35,7 +35,7 @@ not use the Software.
 3. COMMERCIAL USE REQUIRES A SEPARATE LICENSE
    No rights are granted for Commercial Use under this file. Any Commercial Use
    of the Software requires a separate written commercial license agreement
-   with the Licensor. To obtain a commercial license, contact ai@hyperez.io.
+   with the Licensor. To obtain a commercial license, contact support@hyperez.io.
 
 4. RESTRICTIONS
    Except to the extent the following restrictions are prohibited by applicable
@@ -88,4 +88,4 @@ not use the Software.
 
 11. CONTACT
     HyperEZ Inc. (주식회사 하이퍼이지)
-    Commercial licensing and all inquiries: ai@hyperez.io
+    Commercial licensing and all inquiries: support@hyperez.io

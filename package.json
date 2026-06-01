@@ -4,7 +4,7 @@
   "description": "Excel-like grid component library for React. Bring your own cell renderers; keep the spreadsheet engine out of your app.",
   "type": "module",
   "license": "SEE LICENSE IN LICENSE",
-  "author": "HyperEZ Inc. <ai@hyperez.io>",
+  "author": "HyperEZ Inc. <support@hyperez.io>",
   "homepage": "https://github.com/HyperEZ/hyper-xl#readme",
   "repository": {
     "type": "git",
