@@ -6,7 +6,7 @@ Virtualized rendering with selection, editing, clipboard, fill, sort and filter,
 
 > **Distribution notice.** This package ships a prebuilt, minified bundle. The core engine source is not included. See [License](#license) below: free for evaluation and non-commercial use, commercial use requires a separate license.
 
-📖 **Live interactive reference:** **<https://hyperez.github.io/hyper-xl/#/reference>** (edit the code samples in your browser and watch real grids update live). Static API reference: [`docs/reference.html`](docs/reference.html).
+📖 **Documentation:** **<https://hyperez.github.io/hyper-xl/>** (full API reference + install guide). **Live demo:** **<https://hyperez.github.io/hyper-xl/app/>** (interactive grid + live code editor).
 
 ## Install
 
