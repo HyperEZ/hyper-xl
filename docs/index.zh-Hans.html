@@ -766,7 +766,7 @@ function reducer(state: Row[], action: Action): Row[] {
                 <pre><code class="language-css">/* 将受保护单元格的条纹颜色改为品牌色 */
 .xl-react-grid {
   --xl-react-readonly-stripe: rgba(255, 200, 0, 0.18);
-  --xl-react-active-border: #ff4081;
+  --xl-react-selection-border: #ff4081;
   --xl-react-selection-bg: rgba(255, 64, 129, 0.12);
 }</code></pre>
               </div>
@@ -779,9 +779,15 @@ function reducer(state: Row[], action: Action): Row[] {
         <section class="entry anchor-target" id="component">
           <h2>XlReact 组件</h2>
           <p>
-            <code>XlReact</code> 是该库唯一的公开组件。它以完全受控模式
+            <code>XlReact</code> 是该库的核心网格组件。它以完全受控模式
             运行，因此网格绝不会拥有行数据。传入 <code>columns</code> 和
             <code>rows</code>，并接上与所需功能对应的回调即可。
+            除网格外，工具栏、对话框等辅助组件（<code>CellFormatToolbar</code>、
+            <code>CellMergeToolbar</code>、<code>ConditionalFormatToolbar</code>、
+            <code>FindReplaceDialog</code>、<code>ValidationDropdown</code>、
+            <code>ExportButton</code>、<code>ImportDialog</code>、<code>PivotBuilder</code>、
+            <code>PivotChart</code>、<code>SheetTabBar</code>、<code>PrintPreview</code>、
+            <code>FormulaBar</code> 等）也都从 root 一同 export —— 按需选用即可。
           </p>
 
           <div class="codeblock" data-lang="tsx">
@@ -1206,7 +1212,15 @@ interface SelectionSnapshot {
           <ul class="props">
             <li><span class="name">onCopy</span><span class="type">(payload: ClipboardCopyPayload) =&gt; void</span></li>
             <li><span class="name">onCut</span><span class="type">(payload: ClipboardCopyPayload) =&gt; void</span></li>
-            <li><span class="name">onPasteRequest</span><span class="type">(payload: PasteRequestPayload) =&gt; void</span></li>
+            <li>
+              <span class="name">onPasteRequest</span><span class="type">(payload: PasteRequestPayload) =&gt; void</span>
+              <p class="desc">
+                每次 Ctrl+V 都会触发的<em>通知</em>。它不会替代自动 paste ——
+                只要不是 <code>readOnly</code> 且接上了 <code>onCellChange</code>，
+                自动 paste（<code>onCellChange</code>）仍会照常一并执行。
+                若想关闭自动 paste 并自行处理，请与 <code>readOnly</code> 搭配使用（见下方示例）。
+              </p>
+            </li>
             <li><span class="name">onPasteSpecialRequest</span><span class="type">(payload: PasteSpecialRequestPayload) =&gt; void</span></li>
           </ul>
 
@@ -1322,7 +1336,7 @@ const onCellChange = (change: CellChange) =&gt; {
           <h3>动作</h3>
           <ul class="bullets">
             <li><strong>Ctrl+Z</strong> 撤销，<strong>Ctrl+Y</strong> / <strong>Ctrl+Shift+Z</strong> 重做。</li>
-            <li>编辑、粘贴、填充、删除、剪切、结构变更全部记录。</li>
+            <li>单元格值变更（编辑、粘贴、填充、删除、剪切）以 <code>cell-edits</code> 命令记录。行/列的插入·删除·重排·排序等<em>结构性变更目前不在该栈范围内</em>（因为需要消费方的行顺序快照）。</li>
             <li>逆操作会通过 <code>onCellChange</code> 重放 → reducer 必须编写为使得 <code>(coord, prev)</code> 是 clear 的逆操作。</li>
             <li>默认值：100 条目 / 8 MiB。规范保证最少 50 条目。</li>
           </ul>
@@ -1357,7 +1371,7 @@ const onCellChange = (change: CellChange) =&gt; {
 };
 
 const onUndo = () =&gt; {
-  const entry = undoStack.popUndo();
+  const entry = undoStack.pop();
   if (entry?.kind === 'edit') {
     applyEdit({
       ...entry.change,
@@ -1383,7 +1397,7 @@ const onUndo = () =&gt; {
           <h3>调整大小</h3>
           <ul class="bullets">
             <li>拖拽标题边界调节宽度 / 高度。</li>
-            <li>双击标题边界 → AutoFit。</li>
+            <li>双击列标题边界 → 适应内容(AutoFit)。双击行标题边界 → 重置为默认高度。</li>
             <li>选中多个标题时批量应用。</li>
             <li>最小值通过 <code>minColumnWidth</code> / <code>minRowHeight</code> 控制。</li>
           </ul>
@@ -1418,6 +1432,16 @@ const onUndo = () =&gt; {
               </p>
             </li>
             <li><span class="name">onColumnsReorder</span><span class="type">(payload: ColumnsReorderPayload) =&gt; void</span></li>
+            <li>
+              <span class="name">行 / 列隐藏</span><span class="type">内部状态（非回调）</span>
+              <p class="desc">
+                隐藏 / 取消隐藏由<strong>网格内部的 visibility 状态</strong>处理
+                （与冻结窗格一样没有消费方回调）。可通过右键菜单的“隐藏 / 取消隐藏”
+                或 <code>Ctrl+9</code>·<code>Ctrl+0</code>（隐藏）、<code>Ctrl+Shift+9</code>·<code>Ctrl+Shift+0</code>（取消隐藏）
+                触发，坐标映射由网格自动校正。相关 payload
+                （<code>RowsHidePayload</code> 等）为内部专用，不会从 root export。
+              </p>
+            </li>
           </ul>
 
           <h3>冻结窗格</h3>
@@ -1728,12 +1752,12 @@ export function Org() {
             <li>
               <span class="name">sortState / onSortStateChange</span>
               <span class="type">SortState | (next: SortState) =&gt; void</span>
-              <p class="desc">受控排序。两者都传入时会激活点击排序的表头箭头。</p>
+              <p class="desc">受控排序。传入 <code>onSortStateChange</code> 即会激活点击排序的表头箭头。<code>sortState</code> 用于显示当前排序状态并计算下一个状态（不是激活条件）。</p>
             </li>
             <li>
               <span class="name">filterState / onFilterStateChange</span>
               <span class="type">FilterState | (next: FilterState) =&gt; void</span>
-              <p class="desc">受控筛选。两者都传入时会激活表头筛选按钮。</p>
+              <p class="desc">受控筛选。传入 <code>onFilterStateChange</code> 即会激活表头筛选按钮。<code>filterState</code> 用于显示当前筛选状态并计算下一个状态（不是激活条件）。</p>
             </li>
             <li>
               <span class="name">filterPanelRows</span
@@ -1789,7 +1813,8 @@ return (
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import { valueToFilterKey, type FilterState } from 'hyper-xl';
+                <pre><code class="language-tsx">import { useMemo, useState } from 'react';
+import { XlReact, valueToFilterKey, type FilterState } from 'hyper-xl';
 
 const [filterState, setFilterState] = useState&lt;FilterState&gt;({});
 
@@ -1873,10 +1898,11 @@ const BLANK_FILTER_KEY = '__xl_react_blank__';</code></pre>
               <div class="codeblock" data-lang="typescript">
                 <pre><code class="language-typescript">import { processInChunks } from 'hyper-xl';
 
-await processInChunks(largePasteCells, {
-  chunkSize: 500,
-  onChunk: (chunk) =&gt; applyEdits(chunk),
-});</code></pre>
+await processInChunks(
+  largePasteCells,
+  (cell) =&gt; applyEdit(cell),
+  { chunkSize: 500 },
+);</code></pre>
               </div>
             </div>
           </details>
@@ -1912,10 +1938,16 @@ await processInChunks(largePasteCells, {
               <tr><td><code>Tab</code> / <code>→</code></td><td>在编辑模式下采纳 AutoComplete 候选项 (<code>→</code> 仅在光标位于末尾时生效，§2.3)</td></tr>
               <tr><td><code>Delete</code></td><td>删除值</td></tr>
               <tr><td><code>Ctrl+1</code></td><td><code>onCellFormatRequest</code></td></tr>
-              <tr><td><code>Ctrl+Z / Y / Shift+Z</code></td><td>撤销 / 重做</td></tr>
+              <tr><td><code>Ctrl+Z</code> / <code>Ctrl+Y</code> / <code>Ctrl+Shift+Z</code></td><td>撤销 / 重做 / 重做</td></tr>
               <tr><td><code>Ctrl+C / X / V</code></td><td>复制 / 剪切 / 粘贴</td></tr>
               <tr><td><code>Ctrl+Shift+C / V</code></td><td>复制格式 / 粘贴格式：Format Painter (§7.3)</td></tr>
               <tr><td><code>Ctrl+D / R / Enter</code></td><td>填充 (向下 / 向右 / 选区)</td></tr>
+              <tr><td><code>Ctrl+F</code> / <code>Ctrl+H</code></td><td>查找 / 替换对话框 (§9)</td></tr>
+              <tr><td><code>Ctrl+G</code> / <code>F5</code></td><td>定位单元格对话框</td></tr>
+              <tr><td><code>Ctrl+Space</code> / <code>Shift+Space</code></td><td>选择活动列 / 活动行</td></tr>
+              <tr><td><code>Ctrl+9</code> / <code>Ctrl+0</code></td><td>隐藏选中的行 / 列</td></tr>
+              <tr><td><code>Ctrl+Shift+9</code> / <code>Ctrl+Shift+0</code></td><td>取消隐藏选区周围的行 / 列</td></tr>
+              <tr><td><code>Ctrl+;</code> / <code>Ctrl+Shift+;</code></td><td>输入今天日期 / 当前时间 (<code>onCellChange</code> 路径)</td></tr>
             </tbody>
           </table>
 
@@ -2074,7 +2106,9 @@ const next = replaceInValue('Box 12', 'box', 'Crate', {
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">const [zoom, setZoom] = useState(1);
+                <pre><code class="language-tsx">import { useState } from 'react';
+
+const [zoom, setZoom] = useState(1);
 
 return (
   &lt;&gt;
@@ -2155,11 +2189,13 @@ return (
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import {
+                <pre><code class="language-tsx">import { useEffect } from 'react';
+import {
   XlReact,
   SplitPaneView,
   useWorkbookBroadcast,
   openSheetInNewWindow,
+  type Row,
 } from 'hyper-xl';
 
 function WorkbookView({ columns, rows, setRows }) {
@@ -3009,7 +3045,7 @@ function Sheet() {
             <li><strong>显示(Display) 与编辑(Edit) 分离</strong>：<code>cellRenderer</code> 仅用于屏幕显示，<code>cellEditor</code> 仅用于通过 F2 · 双击 · 输入进入的编辑。两者均可选，若没有则回退到默认文本显示 / 默认输入编辑器（既有行为不变）。</li>
             <li><strong>两级指定</strong>：列级(<code>Column.cellRenderer</code> · <code>Column.cellEditor</code>) 和单元格级(<code>cellRenderers</code> prop)。单元格级会覆盖列级。</li>
             <li><code>cellRenderers</code> 与 <code>cellFormats</code> · <code>cellAnnotations</code> 是相同的<em>解析器模式</em>：以 <code>"row:col"</code> 为键的 sparse 映射，或 <code>(rowIndex, columnIndex) =&gt; CellRenderer | undefined</code> 函数。</li>
-            <li>显示渲染器 props：<code>{ value, row, column, rowIndex, columnIndex, isEditing }</code>。编辑渲染器在此基础上增加 <code>{ onCommit, onCancel, mode, initialDraft }</code>。</li>
+            <li>显示渲染器 props：<code>{ value, row, column, rowIndex, columnIndex, isEditing }</code>。不过，<strong>显示渲染器在编辑期间不会被调用</strong>（被编辑的单元格会被清空，由编辑器覆盖层代为绘制），因此 <code>isEditing</code> 始终为 <code>false</code> —— <code>isEditing: true</code> 仅会传给编辑渲染器。编辑渲染器在此基础上增加 <code>{ onCommit, onCancel, mode, initialDraft }</code>。</li>
             <li><strong>编辑器作为组件挂载</strong>（自有 fiber）：可用 <code>useState</code> 等 Hook 自由管理草稿状态。相反<strong>显示渲染器是作为纯函数调用</strong>的，所以不要在顶层使用 Hook（若需要状态请渲染子组件）。通过输入进入时，<code>mode='overwrite'</code> · <code>initialDraft</code> 中会带入该按键。（网格会恢复编辑器区域的 <code>user-select</code>，因此输入·文本选择能正常工作。）</li>
             <li><code>onCommit(next, nav?)</code> 会<strong>保留类型</strong>：输入的值（数字 · 对象等）不经强制转换地流入 <code>onCellChange</code>。可用 <code>nav</code>(<code>'enter' | 'tab' | 'shift-tab' | 'shift-enter' | 'none'</code>) 像内置编辑器一样控制提交后的活动单元格移动。若 <code>next</code> 与当前值相同则不会发生提交。</li>
             <li><strong>虚拟滚动兼容</strong>：单元格通过 <code>React.memo</code> 比较，若 <code>cellRenderer</code> 标识相同则跳过重新渲染。请用模块作用域或 <code>useMemo</code> 稳定渲染器。若每次渲染都传入新函数，所有单元格都会重新绘制。解析器函数型也建议采用返回相同引用的模式。</li>
@@ -3318,7 +3354,7 @@ function Sheet() {
               </p>
             </li>
             <li>
-              <span class="name">CellFormatToolbar</span
+              <span class="name">CellMergeToolbar</span
               ><span class="type">component (merges, onMergesChange, onMergeClearCovered)</span>
               <p class="desc">
                 传入 <code>merges</code> / <code>onMergesChange</code> 后，合并 / 取消合并 /
@@ -3417,7 +3453,7 @@ function Sheet() {
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
                 <pre><code class="language-tsx">import { useMemo } from 'react';
-import { cellAnnotationKey, type CellAnnotationsMap } from 'hyper-xl';
+import { XlReact, cellAnnotationKey, type CellAnnotationsMap } from 'hyper-xl';
 
 const annotations: CellAnnotationsMap = useMemo(() =&gt; {
   const map: Record&lt;string, string&gt; = {};
@@ -3799,8 +3835,9 @@ const ok = isValueInList('KRPUS', options ?? []);</code></pre>
               <span class="name">parseFormula</span
               ><span class="type">(input: string) =&gt; FormulaAst | FormulaParseError</span>
               <p class="desc">
-                无论是否带有前导<code>=</code>都能工作。函数调用、绝对引用等
-                不支持的输入会以<code>FormulaParseError</code>(<code>'#NAME?'</code> /
+                无论是否带有前导<code>=</code>都能工作。支持 <code>$A$1</code> 这样的
+                绝对引用。函数调用、区间等不支持的输入会以
+                <code>FormulaParseError</code>(<code>'#NAME?'</code> /
                 <code>'#REF!'</code>)拒绝。
               </p>
             </li>
@@ -3858,7 +3895,8 @@ const ok = isValueInList('KRPUS', options ?? []);</code></pre>
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import { FormulaSheet, XlReact } from 'hyper-xl';
+                <pre><code class="language-tsx">import { useMemo, useRef, useState } from 'react';
+import { FormulaSheet, XlReact } from 'hyper-xl';
 
 // 由使用方拥有。工作表保存 raw + 求值结果 + 依赖图。
 const sheetRef = useRef&lt;FormulaSheet | null&gt;(null);
@@ -3982,7 +4020,8 @@ shiftFormulaRefs('=$A$1+B1', 5, 2);
               回弹为<code>activeRef</code>。
             </li>
             <li>
-              <code>readOnly</code>仅锁定输入框而组件照常渲染,
+              <code>readOnly</code>会同时锁定公式输入框和名称框，阻止进入编辑与
+              commit，但组件照常渲染（聚焦的只读 input 上按 Enter 也不会 commit）；
               <code>disabled</code>则灰显 + 阻断交互。
             </li>
             <li>
@@ -4056,7 +4095,14 @@ shiftFormulaRefs('=$A$1+B1', 5, 2);
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import { FormulaBar, FormulaSheet, XlReact, coordToA1 } from 'hyper-xl';
+                <pre><code class="language-tsx">import { useRef, useState } from 'react';
+import {
+  FormulaBar,
+  FormulaSheet,
+  XlReact,
+  coordToA1,
+  type SelectionSnapshot,
+} from 'hyper-xl';
 
 // 使用方保存的工作表实例 (为引用稳定性使用 ref)。
 const sheetRef = useRef&lt;FormulaSheet | null&gt;(null);
@@ -4309,7 +4355,8 @@ return (
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import {
+                <pre><code class="language-tsx">import { useState } from 'react';
+import {
   ExportButton,
   ImportDialog,
   defaultExportFilename,
@@ -4377,8 +4424,11 @@ const result = await importFromXlsx(file, {
 });
 
 // CSV：无需 ExcelJS 的纯函数
-const csv = exportToCsv({ rows, columns }, { delimiter: ',', bom: true });
-const csvResult = importFromCsv(csv);</code></pre>
+// exportToCsv 默认不写表头（includeHeader 默认为 false），
+// importFromCsv 默认将首行视为表头（includeHeader 默认为 true）。
+// 若要让往返一致，请在两侧都显式指定 includeHeader。
+const csv = exportToCsv({ rows, columns }, { delimiter: ',', bom: true, includeHeader: true });
+const csvResult = importFromCsv(csv, { includeHeader: true });</code></pre>
               </div>
             </div>
           </details>
@@ -4417,8 +4467,9 @@ const blob = await exportMultiSheetXlsx([
           <p class="meta-row">
             <span class="pill feature">Feature</span><span class="pill high">High</span>
             PRD §10A：Row / Column / Value / Filter 四个区域的拖放
-            构建器，9 种聚合，6 种值显示格式（常规 / 总计 % / 列 % / 行 % / 父行 % /
-            父列 %），行·列标签上的分组（日期：年/季度/月/周/日 · 数字：任意
+            构建器，9 种聚合，值显示格式共 13 种（P1 6 种：常规 / 总计 % / 列 % / 行 % /
+            父行 % / 父列 % + §10A.4 P2 计算模式 7 种：差异 / % 差异 / 累计 /
+            % 累计 / 升序·降序排名 / 索引），行·列标签上的分组（日期：年/季度/月/周/日 · 数字：任意
             区间），总计行·列，单个透视表刷新，透视图（柱状·折线·饼图）
             全部包含的 MVP。结果表以库标准 <code>&lt;XlReact&gt;</code> 网格
             渲染，单元格选区 · 键盘导航 · 剪贴板 · 缩放 · Freeze 等网格的
@@ -4443,7 +4494,7 @@ const blob = await exportMultiSheetXlsx([
               值单元格中的数字会以 <code>Intl.NumberFormat</code>（最多小数 4 位）自动格式化。
             </li>
             <li>
-              <code>aggregate(kind, values)</code>：9 种聚合的单一分发器（<code>sum</code>
+              <code>pivotAggregate(kind, values)</code>：9 种聚合的单一分发器（<code>sum</code>
               · <code>count</code> · <code>countA</code> · <code>average</code> · <code>max</code>
               · <code>min</code> · <code>stdDev</code> · <code>variance</code> · <code>product</code>）。
               非数字（<code>NaN</code>、<code>±Infinity</code>、对象、boolean）不会污染桶，
@@ -4529,7 +4580,7 @@ const result = buildPivot(shipments, config);
 // result.rowPaths       → [['釜山'], ['仁川']]
 // result.columnPaths    → [['集装箱'], ['散货']]
 // result.grandTotalRow  → [40, 12]    // 集装箱 / 散货 总和
-// result.grandTotalCol  → [15, 37]    // 釜山 / 仁川 总和
+// result.grandTotalColumn → [15, 37]  // 釜山 / 仁川 总和
 // result.grandTotal     → [52]        // 整体总和：在原始数据上重新计算</code></pre>
               </div>
             </div>
@@ -4547,9 +4598,9 @@ const result = buildPivot(shipments, config);
 const rows: Row[] = /* ... 原始行 ... */;
 
 const fields: PivotAvailableField[] = [
-  { key: 'region',  label: '卸货港',  type: 'string' },
-  { key: 'product', label: '品种',    type: 'string' },
-  { key: 'team',    label: '部门',    type: 'string' },
+  { key: 'region',  label: '卸货港',  type: 'text' },
+  { key: 'product', label: '品种',    type: 'text' },
+  { key: 'team',    label: '部门',    type: 'text' },
   { key: 'qty',     label: '数量',    type: 'number' },
   { key: 'weight',  label: '装载量',  type: 'number' },
 ];
@@ -4706,8 +4757,8 @@ const result = buildPivot(rows, config);
             原始值桶：因此分组行与非分组行可以在同一结果中共存。
           </p>
           <p>
-            引擎在 <code>readField</code> 阶段应用 <code>bucketize(raw, field.grouping)</code>，
-            因此所有后续路径（表头树 · 父桶 · % 模式分母）都无需改动即可
+            引擎在内部 <code>readField</code> 阶段将值归一化为桶（<code>bucketize</code>，
+            非公开实现），因此所有后续路径（表头树 · 父桶 · % 模式分母）都无需改动即可
             运作。也就是说，即便在<em>按季度分组的行 × 按季度分组的列</em>之上，§10A.4 的
             <code>percentOfParentRow</code> 这类显示格式也能原样保有其意义。
           </p>
@@ -5080,9 +5131,9 @@ function ShipmentPivot({ rows }: { rows: Row[] }) {
 
           <h3>预设透视表 (§10A.11 P1)</h3>
           <p>
-            为了能够立即应用布线系统中预期会经常创建的 5 种透视表配置，
-            一并提供 <code>PivotConfig</code> 预设以及可用于验证这些预设的伪
-            布线数据集(<em>fake wiring manifest</em>)。
+            为了能够立即应用布线系统中预期会经常创建的透视表配置，
+            一并提供 <code>PivotConfig</code> 预设（P1 5 种 + §10A.11 P2 3 种 = 目前 8 种）
+            以及可用于验证这些预设的伪布线数据集(<em>fake wiring manifest</em>)。
             直接注入 <code>PivotBuilder</code> 的 <code>initialConfig</code> 或
             <code>buildPivot</code> 即可。
           </p>
@@ -5090,11 +5141,13 @@ function ShipmentPivot({ rows }: { rows: Row[] }) {
             <li>
               <span class="name">WIRING_PIVOT_PRESETS</span><span class="type">ReadonlyArray&lt;WiringPivotPreset&gt;</span>
               <p class="desc">
-                按顺序暴露 5 种预设的 <strong>frozen</strong> 数组。前三
+                按顺序暴露预设的 <strong>frozen</strong> 数组。前三
                 项是"布线申请合计"家族(<em>按卸货港 / 按品种 / 按部门</em>)，
                 第四项是以行=卸货港 × 列=月(<code>shipDate</code> 的 §10A.5 月份分组)
                 为基准的发运量累计，第五项是以部门×月为基准将发运量
                 用 <code>percentOfRow</code> (§10A.4) 显示的"实际对计划比率 (%)"。
+                此后 §10A.11 P2 又新增了基于航次·许可·生产进度的 3 种，
+                因此当前数组共包含 <strong>8 种</strong>。
               </p>
             </li>
             <li>
@@ -5118,8 +5171,9 @@ function ShipmentPivot({ rows }: { rows: Row[] }) {
             <li>
               <span class="name">WIRING_PRESET_FIELDS</span><span class="type">ReadonlyArray&lt;PivotAvailableField&gt;</span>
               <p class="desc">
-                与上述数据集一一对应的字段描述符列表。按卸货港 · 品种 ·
-                部门 · 月 · 发运日 · 数量 · 发运量(t) · 计划(t) 的顺序暴露。
+                与上述数据集一一对应的字段描述符列表（共 11 个）。按卸货港 · 品种 ·
+                部门 · 月 · 发运日 · 数量 · 发运量(t) · 计划(t) · 航次 · 许可状态 ·
+                生产进度(%) 的顺序暴露。
                 直接传给 <code>PivotBuilder</code> 的 <code>availableFields</code> 即可
                 让预设与数据集原封不动地结合。
               </p>
@@ -5227,10 +5281,13 @@ export function WiringPresetShowcase() {
           <h3>值显示格式: 计算模式 (§10A.4 P2)</h3>
           <p>
             在 P1 的 5 种 % 模式之外，又新增了 Excel 的"Show Values As"计算家族
-            的 7 种。它们都具有<em>轴(axis)</em>概念，
+            的 7 种（整个 <code>PivotValueDisplay</code> 共 13 种）。
+            其中 <code>index</code> 是 <code>(单元格 × 总计) / (行合 × 列合)</code> 的双轴
+            对称公式，没有轴概念，其余 6 种具有<em>轴(axis)</em>概念，
             通过 <code>PivotValueField.valueDisplayAxis</code> (<code>'column'</code>
             为默认 / <code>'row'</code>)决定沿哪个方向进行转换。
-            对于轴有意义的模式(<code>PIVOT_VALUE_DISPLAY_AXIS_AWARE</code>)，
+            对于轴有意义的模式(内部集合 <code>PIVOT_VALUE_DISPLAY_AXIS_AWARE</code>
+            —— 不会作为包 API export 的实现细节)，
             构建器 UI 中会在显示格式旁自动显示<strong>计算方向</strong>下拉框。
           </p>
           <ul class="props">
@@ -5290,7 +5347,8 @@ export function WiringPresetShowcase() {
             用于打开<strong>手动分组</strong>弹出框。一个分组以
             <code>{ label, values: [...] }</code> 定义，同一分组内的值会
             合并为一个分组标签。匹配基于
-            <code>groupKeyOf</code> 的 canonical equality，因此 <code>'1'</code>
+            引擎内部的 canonical equality(<code>groupKeyOf</code>，非公开实现)，
+            因此 <code>'1'</code>
             和 <code>1</code> 这样的整数型表示也会被同样地归并。未匹配的
             值则原样以原始标签显示。
           </p>
@@ -5301,8 +5359,13 @@ export function WiringPresetShowcase() {
             切换时，该分组的所有叶行都会被隐藏，小计行则
             被强制显示(即使 <code>subtotalPosition: 'none'</code> 也强制暴露)。
             还一并提供"全部折叠" / "全部展开" / "上钻"(移除最内层行字段)操作。
-            折叠状态通过 <code>PivotGridAdapterOptions.collapsedRowGroupKeys</code> 传递给
-            适配器，键用 <code>pivotRowGroupKey(path)</code> 生成。
+            折叠状态通过从 root export 的
+            <code>pivotResultToGrid(result, labels?, layout?, adapterOptions?)</code> 的
+            第四个参数 <code>adapterOptions.collapsedRowGroupKeys</code> 传递。
+            <span class="note">注：选项类型 <code>PivotGridAdapterOptions</code> 与键构造器
+            <code>pivotRowGroupKey(path)</code> 不会暴露在公开包 API(root export)中 ——
+            <code>collapsedRowGroupKeys</code>(<code>ReadonlySet&lt;string&gt;</code>)中
+            直接放入 <code>PivotGridSnapshot.collapsibleRowGroups[].pathKey</code> 值即可。</span>
           </p>
 
           <h3>切片器 · 时间轴 (§10A.6 P2)</h3>
@@ -5414,12 +5477,14 @@ export function WiringPresetShowcase() {
             <li>
               <span class="name">autoRefreshIntervalMs</span><span class="type">number | null</span>
               <p class="desc">
-                基于 <code>setInterval</code> 的周期性重新计算。
-                在 <code>PivotRefreshScope</code> 内会向同一 scope 的所有透视表
-                fan-out。当为 <code>0</code> / <code>null</code> / 省略时定时器
-                禁用。库直接暴露 <code>usePivotAutoRefresh(intervalMs, opts)</code>
-                钩子，因此在构建器之外的自定义工具栏中也可以实现相同的
-                行为。
+                基于 <code>setInterval</code> 的周期性重新计算。这是<strong>只重算该构建器</strong>
+                的 <em>per-pivot</em> 定时器 —— 即便处于 <code>PivotRefreshScope</code>
+                之内，它也只递增自身的本地 nonce，<em>不会</em>向整个 scope fan-out
+                （以避免相同 cadence 的定时器在 N 个透视表上各铺一份而重复）。
+                若要以单一 cadence 一起刷新 scope 内的所有透视表，请在 scope 层级
+                （例如公共工具栏中）调用一次 <code>usePivotAutoRefresh(intervalMs, opts)</code>
+                钩子 —— 该钩子会递增 scope nonce，使所有透视表一同重算。
+                当为 <code>0</code> / <code>null</code> / 省略时定时器禁用。
               </p>
             </li>
             <li>
@@ -5438,7 +5503,7 @@ export function WiringPresetShowcase() {
             DB 查询 · 外部馈送之类的可变出处流入时，
             用与 <strong>RowSource 适配器</strong>成对的 hook
             连接起来，无需单独点击&lsquo;刷新&rsquo;即可自动重新计算。
-            暴露了四种工厂和两种 hook。
+            暴露了四种工厂和三种 hook。
           </p>
           <ul class="props">
             <li>
@@ -5524,7 +5589,8 @@ export function WiringPresetShowcase() {
             / 恢复初始值按钮以同样的模式实时展示。
           </p>
           <p class="code-block">
-            <pre><code class="language-tsx">import { PivotBuilder, dynamicRowSource, useRowSource } from 'hyper-xl';
+            <pre><code class="language-tsx">import { useMemo } from 'react';
+import { PivotBuilder, dynamicRowSource, useRowSource, type Row } from 'hyper-xl';
 
 function ExternalPivot({ seed }: { seed: Row[] }) {
   const source = useMemo(() =&gt; dynamicRowSource(seed), []);
@@ -5820,7 +5886,8 @@ const series = pivotResultToChartSeries(result, {
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import {
+                <pre><code class="language-tsx">import { useEffect, useRef, useState } from 'react';
+import {
   XlReact,
   SheetTabBar,
   useWorkbook,
@@ -5864,8 +5931,16 @@ function Workbook() {
       &lt;XlReact
         columns={columns}
         rows={active.rows}
-        onChange={(rows) =&gt;
-          setData((m) =&gt; ({ ...m, [workbook.activeSheet.id]: { rows } }))
+        onCellChange={(change) =&gt;
+          setData((m) =&gt; {
+            const sheetId = workbook.activeSheet.id;
+            const rows = m[sheetId].rows.map((row, i) =&gt;
+              i === change.coord.row
+                ? { ...row, data: { ...row.data, [change.columnId]: change.nextValue } }
+                : row,
+            );
+            return { ...m, [sheetId]: { rows } };
+          })
         }
         readOnly={!!workbook.activeSheet.protected}
       /&gt;
@@ -5887,21 +5962,25 @@ function Workbook() {
                 <pre><code class="language-tsx">import {
   workbookToMultiSheetEntries,
   exportMultiSheetXlsx,
+  triggerBlobDownload,
 } from 'hyper-xl';
 
 async function exportWorkbook() {
+  // getSnapshot 回调接收的是 Sheet 对象，而非 sheetId。
   const entries = workbookToMultiSheetEntries(
     workbook.workbook,
-    (sheetId) =&gt; ({
-      rows: data[sheetId].rows,
+    (sheet) =&gt; ({
+      rows: data[sheet.id].rows,
       columns,
-      cellFormats: formats[sheetId],
-      merges: merges[sheetId],
+      cellFormats: formats[sheet.id],
+      merges: merges[sheet.id],
     }),
-    // includeHidden 기본값은 false: 숨김 시트는 자동으로 빠집니다.
+    // includeHidden 默认为 false：隐藏的工作表会被自动排除。
     { defaults: { dateFormat: 'yyyy-mm-dd' } },
   );
-  await exportMultiSheetXlsx(entries, 'workbook.xlsx');
+  // exportMultiSheetXlsx 返回 Blob —— 保存文件请用 triggerBlobDownload。
+  const blob = await exportMultiSheetXlsx(entries);
+  triggerBlobDownload(blob, 'workbook.xlsx');
 }</code></pre>
               </div>
             </div>
@@ -5921,12 +6000,12 @@ async function exportWorkbook() {
           <h3>API 表面</h3>
           <ul class="props">
             <li>
-              <span class="name">Workbook</span><span class="type">{ sheets: Sheet[]; activeSheetId: SheetId }</span>
+              <span class="name">Workbook</span><span class="type">{ sheets: ReadonlyArray&lt;Sheet&gt;; activeSheetId: SheetId }</span>
               <p class="desc">纯可序列化的形态：没有类实例或闭包，可直接保存 / 恢复。</p>
             </li>
             <li>
-              <span class="name">Sheet</span><span class="type">{ id: SheetId; name: string; color?: string; hidden?: true; protected?: true }</span>
-              <p class="desc"><code>hidden</code> / <code>protected</code> 仅在开启状态下作为键存在：为了保持外部相等比较的整洁，不保存 false。</p>
+              <span class="name">Sheet</span><span class="type">{ id: SheetId; name: string; color?: string | null; hidden?: boolean; protected?: boolean }</span>
+              <p class="desc">建议 <code>hidden</code> / <code>protected</code> 仅在开启状态下作为键保留：为了保持外部相等比较的整洁，不保存 false。<code>color</code> 可用 <code>null</code> 表示“无颜色”。</p>
             </li>
             <li>
               <span class="name">WorkbookAction</span><span class="type">discriminated union</span>
@@ -5943,7 +6022,7 @@ async function exportWorkbook() {
 
         <section class="entry anchor-target" id="api-xlreact-props">
           <h2>API: XlReactProps</h2>
-          <p>按声明顺序整理的完整 prop 表。详细背景请参阅各功能章节。</p>
+          <p>按功能整理的完整 prop 表。详细背景请参阅各功能章节。</p>
 
           <h3>数据</h3>
           <ul class="props">
@@ -6023,8 +6102,20 @@ async function exportWorkbook() {
               ><span class="type">CellFormatResolver | CellFormatsMap</span>
             </li>
             <li>
-              <span class="name">CellFormatToolbar</span
-              ><span class="type">{ selection, cellFormats: CellFormatsMap, onCellFormatsChange }</span>
+              <span class="name">onCellFormatsChange</span
+              ><span class="type">(next: CellFormatsMap) =&gt; void</span>
+            </li>
+            <li>
+              <span class="name">borderDrawTool</span
+              ><span class="type">BorderDrawTool | null</span>
+            </li>
+            <li>
+              <span class="name">borderDrawSide</span
+              ><span class="type">CellBorderSide</span>
+            </li>
+            <li>
+              <span class="name">merges</span
+              ><span class="type">ReadonlyArray&lt;SelectionRange&gt;</span>
             </li>
           </ul>
 
@@ -6090,7 +6181,12 @@ async function exportWorkbook() {
 
         <section class="entry anchor-target" id="api-types">
           <h2>API：类型定义</h2>
-          <p>从 <code>'hyper-xl'</code> re-export。源码位于 <code>src/types/</code>。</p>
+          <p>
+            从 <code>'hyper-xl'</code> re-export。多数定义在 <code>src/types/</code> 中，
+            但部分（selection · editing · contextMenu · sortFilter · protection 系列）
+            位于 <code>src/XlReact/…</code> 各模块，再由 <code>src/types/index.ts</code>
+            重新 re-export。
+          </p>
 
           <details class="example" open>
             <summary>
@@ -6107,6 +6203,8 @@ interface Row {
   id: string | number;
   data: Record&lt;string, unknown&gt;;
   height?: number;
+  level?: number;                          // §6.4 行层级深度
+  parentId?: string | number | null;       // §6.4 显式父级引用
 }
 
 interface CellRendererProps&lt;T&gt; {
@@ -6281,6 +6379,8 @@ interface CellBorder {
   right?: CellBorderSide;
   bottom?: CellBorderSide;
   left?: CellBorderSide;
+  diagonalDown?: CellBorderSide;  // ╲ 单元格内部对角线 (SVG 覆盖层)
+  diagonalUp?: CellBorderSide;    // ╱ 单元格内部对角线
 }
 interface CellFormat {
   font?: CellFont;
@@ -6305,6 +6405,8 @@ interface CellBorderPatch {
   right?: CellBorderSidePatch | null;
   bottom?: CellBorderSidePatch | null;
   left?: CellBorderSidePatch | null;
+  diagonalDown?: CellBorderSidePatch | null;
+  diagonalUp?: CellBorderSidePatch | null;
 }
 type CellFormatPatch = {
   font?: CellFontPatch | null;
@@ -6313,7 +6415,8 @@ type CellFormatPatch = {
   border?: CellBorderPatch | null;
   numberFormat?: string | null;
 };
-type CellBorderPlacement = 'outline' | 'all' | 'top' | 'right' | 'bottom' | 'left' | 'none';
+type CellBorderPlacement = 'outline' | 'all' | 'top' | 'right' | 'bottom' | 'left' | 'none'
+  | 'diagonal-down' | 'diagonal-up';
 type CellFormatPatchResolver = (
   current: CellFormat | undefined,
   coord: CellCoord,
@@ -6325,6 +6428,31 @@ interface CellFormatToolbarProps {
   onCellFormatsChange: (next: CellFormatsMap) =&gt; void;
   disabled?: boolean;
   className?: string;
+  // 字体 / 数字格式选项覆盖
+  fontFamilies?: readonly CellFormatToolbarFontOption[];
+  fontSizes?: readonly number[];
+  numberFormats?: readonly CellFormatToolbarNumberFormatOption[];
+  // 合并集成 (吸收 CellMergeToolbar 功能)
+  merges?: ReadonlyArray&lt;SelectionRange&gt;;
+  onMergesChange?: (next: SelectionRange[]) =&gt; void;
+  onMergeClearCovered?: (ranges: SelectionRange[]) =&gt; void;
+  mergeLabels?: CellMergeToolbarLabels;
+  // 边框绘制工具
+  activeBorderTool?: BorderDrawTool | null;
+  onBorderDrawToolChange?: (tool: BorderDrawTool | null, side: CellBorderSide) =&gt; void;
+  // 条件格式集成
+  conditionalRules?: readonly ConditionalRule[];
+  onConditionalRulesChange?: (next: ConditionalRule[]) =&gt; void;
+  columns?: readonly AnyColumn[];
+  conditionalFormatLabels?: Partial&lt;ConditionalFormatToolbarLabels&gt;;
+  // 单元格样式预设集成
+  cellStyleRegistry?: CellStyleRegistry;
+  cellStyleApplyMode?: CellStyleApplyMode;
+  cellStyleLabels?: Partial&lt;CellStyleToolbarLabels&gt;;
+  // 格式刷 (Format Painter)
+  formatPainterArmed?: boolean;
+  onFormatPainterToggle?: () =&gt; void;
+  formatPainterLabel?: string;
 }
 
 function cellFormatKey(rowIndex: number, columnIndex: number): string;
@@ -6392,7 +6520,12 @@ interface ProtectedActionInfo {
 
         <section class="entry anchor-target" id="api-utilities">
           <h2>API：工具函数</h2>
-          <p>从 <code>'hyper-xl'</code> export 的辅助函数。</p>
+          <p>
+            从 <code>'hyper-xl'</code> export 的<strong>主要</strong>工具函数（代表性条目）。
+            除本列表外，root 还 export 了大量与格式·条件格式·单元格样式·合并·查找·透视表·工作表·打印·公式
+            相关的辅助函数与组件 —— 完整列表请参阅各功能章节和
+            <code>src/index.ts</code>。
+          </p>
 
           <ul class="props">
             <li>
@@ -6402,8 +6535,12 @@ interface ProtectedActionInfo {
             </li>
             <li>
               <span class="name">processInChunks</span
-              ><span class="type">(items, options) =&gt; Promise&lt;void&gt;</span>
-              <p class="desc">paste / fill 所使用的异步分块迭代辅助函数。</p>
+              ><span class="type">(items, perItem, options?) =&gt; Promise&lt;void&gt;</span>
+              <p class="desc">
+                paste / fill 所使用的异步分块迭代辅助函数。回调
+                <code>perItem(item, index)</code> 是第二个参数，选项为
+                <code>{ chunkSize?, signal? }</code>。
+              </p>
             </li>
             <li>
               <span class="name">BoundedUndoStack</span
@@ -6542,7 +6679,7 @@ interface ProtectedActionInfo {
               <tr><td><a href="#print">打印 (Print: 预览模态 · A4/A3/A5/Letter/Legal/Tabloid 纸张 + 横向/纵向 · 边距 / 缩放(10~400%) · 页眉·页脚 3-zone + <code>&P/&N/&D/&T/&F/&A</code> 占位符 · 打印区域 · 行/列重复 · 分页预览叠加层 · <code>@media print</code> 分页符 · 纯 <code>paginate()</code> 引擎(可复用于 PDF))</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill med">Medium</span></td><td>2026-05-29</td></tr>
               <tr><td><a href="#view-modes">视图模式 (View Modes: 网格线 / 表头显示·隐藏 · 1 / 2 / 4 分割面板 + 滚动同步 · 新窗口 BroadcastChannel 同步 · Fullscreen API)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill med">Medium</span></td><td>2026-05-28</td></tr>
               <tr><td><a href="#sheets">工作表 / 标签 (Workbook: 多工作表模型 · 添加 / 删除 / 重命名 / 标签颜色 / 拖动重排 / 复制 · 隐藏 · 保护(只读) · 各工作表的载荷由使用方所有 · 多工作表 .xlsx 导出桥接 · 英语 / 韩语标签预设)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill high">High</span></td><td>2026-05-28</td></tr>
-              <tr><td><a href="#pivot">透视表 (Pivot Table: 4 区域拖放构建器 · 9 种聚合 · 6 种值显示格式(%) · 行/列分组(日期单位 · 数字区间) · 排序·标签筛选·轴值筛选(Top N / 高于·低于平均 / 阈值) · 分类汇总位置 · 报表格式(紧凑/大纲/表格) · 空单元格显示值 · 总计 · 多透视表批量刷新 · 详细信息 (Show Details: 双击值单元格提取源行) · 预设透视表 (布线申请合计 / 月度累计 / 计划对比实绩 %) · 透视图 (柱形 / 折线 / 饼图) · 外部 · 动态数据源 (RowSource 适配器: 其他网格 / DB 查询 / 添加行时自动重算) · 用 XlReact 网格渲染结果)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill high">High</span></td><td>2026-05-28</td></tr>
+              <tr><td><a href="#pivot">透视表 (Pivot Table: 4 区域拖放构建器 · 9 种聚合 · 13 种值显示格式(P1 % 6 + P2 计算模式 7) · 行/列分组(日期单位 · 数字区间) · 排序·标签筛选·轴值筛选(Top N / 高于·低于平均 / 阈值) · 分类汇总位置 · 报表格式(紧凑/大纲/表格) · 空单元格显示值 · 总计 · 多透视表批量刷新 · 详细信息 (Show Details: 双击值单元格提取源行) · 预设透视表 (布线申请合计 / 月度累计 / 计划对比实绩 %) · 透视图 (柱形 / 折线 / 饼图) · 外部 · 动态数据源 (RowSource 适配器: 其他网格 / DB 查询 / 添加行时自动重算) · 用 XlReact 网格渲染结果)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill high">High</span></td><td>2026-05-28</td></tr>
               <tr><td><a href="#row-grouping">行层级结构 (Row Hierarchy / Grouping: 多级树 + 折叠/展开)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill med">Medium</span></td><td>2026-05-27</td></tr>
               <tr><td><a href="#import-export">导入 / 导出 (Excel · CSV · TSV: 格式 · 公式 · 多工作表 · 列映射 · 验证报告)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill high">High</span></td><td>2026-05-27</td></tr>
               <tr><td><a href="#formula">公式引擎 (Formula Engine: 四则运算 + 单元格引用 + <code>$</code> 绝对引用 + 自动填充时相对移动)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill med">Medium</span></td><td>2026-05-27</td></tr>

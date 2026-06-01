@@ -767,7 +767,7 @@ function reducer(state: Row[], action: Action): Row[] {
                 <pre><code class="language-css">/* 보호된 셀의 스트라이프 색상을 브랜드 색으로 변경 */
 .xl-react-grid {
   --xl-react-readonly-stripe: rgba(255, 200, 0, 0.18);
-  --xl-react-active-border: #ff4081;
+  --xl-react-selection-border: #ff4081;
   --xl-react-selection-bg: rgba(255, 64, 129, 0.12);
 }</code></pre>
               </div>
@@ -780,9 +780,16 @@ function reducer(state: Row[], action: Action): Row[] {
         <section class="entry anchor-target" id="component">
           <h2>XlReact 컴포넌트</h2>
           <p>
-            <code>XlReact</code>가 라이브러리의 유일한 공개 컴포넌트입니다. 완전한 컨트롤드 모드로
+            <code>XlReact</code>가 라이브러리의 핵심 그리드 컴포넌트입니다. 완전한 컨트롤드 모드로
             동작하므로 그리드는 로우 데이터를 절대 소유하지 않습니다. <code>columns</code>와
             <code>rows</code>를 넘기고, 필요한 기능에 대응하는 콜백을 와이어하면 됩니다.
+            그리드 외에도 툴바·다이얼로그 등 보조 컴포넌트(<code>CellFormatToolbar</code>,
+            <code>CellMergeToolbar</code>, <code>ConditionalFormatToolbar</code>,
+            <code>FindReplaceDialog</code>, <code>ValidationDropdown</code>,
+            <code>ExportButton</code>, <code>ImportDialog</code>, <code>PivotBuilder</code>,
+            <code>PivotChart</code>, <code>SheetTabBar</code>, <code>PrintPreview</code>,
+            <code>FormulaBar</code> 등)가 root에서 함께 export 됩니다 — 필요한 것만 골라
+            쓰면 됩니다.
           </p>
 
           <div class="codeblock" data-lang="tsx">
@@ -1211,7 +1218,15 @@ interface SelectionSnapshot {
           <ul class="props">
             <li><span class="name">onCopy</span><span class="type">(payload: ClipboardCopyPayload) =&gt; void</span></li>
             <li><span class="name">onCut</span><span class="type">(payload: ClipboardCopyPayload) =&gt; void</span></li>
-            <li><span class="name">onPasteRequest</span><span class="type">(payload: PasteRequestPayload) =&gt; void</span></li>
+            <li>
+              <span class="name">onPasteRequest</span><span class="type">(payload: PasteRequestPayload) =&gt; void</span>
+              <p class="desc">
+                매 Ctrl+V마다 발사되는 <em>알림</em>. 자동 paste를 대체하지 않습니다 —
+                <code>readOnly</code>가 아니고 <code>onCellChange</code>가 연결돼 있으면
+                자동 paste(<code>onCellChange</code>)가 그대로 함께 실행됩니다.
+                자동 paste를 끄고 직접 처리하려면 <code>readOnly</code>와 함께 사용하세요(아래 예제).
+              </p>
+            </li>
             <li><span class="name">onPasteSpecialRequest</span><span class="type">(payload: PasteSpecialRequestPayload) =&gt; void</span></li>
           </ul>
 
@@ -1327,7 +1342,7 @@ const onCellChange = (change: CellChange) =&gt; {
           <h3>동작</h3>
           <ul class="bullets">
             <li><strong>Ctrl+Z</strong> 실행 취소, <strong>Ctrl+Y</strong> / <strong>Ctrl+Shift+Z</strong> 다시 실행.</li>
-            <li>편집, 붙여넣기, 채우기, 삭제, 잘라내기, 구조 변경 모두 기록.</li>
+            <li>셀 값 변경(편집, 붙여넣기, 채우기, 삭제, 잘라내기)을 <code>cell-edits</code> 커맨드로 기록. 행/열 삽입·삭제·재정렬·정렬 등 <em>구조 변경은 현재 스택 범위 밖</em>입니다(컨슈머의 행 순서 스냅샷이 필요하기 때문).</li>
             <li>역연산은 <code>onCellChange</code>로 재생 → reducer는 <code>(coord, prev)</code>가 clear의 역연산이도록 작성해야 함.</li>
             <li>기본값: 100 엔트리 / 8 MiB. 명세는 최소 50 엔트리 보장.</li>
           </ul>
@@ -1362,7 +1377,7 @@ const onCellChange = (change: CellChange) =&gt; {
 };
 
 const onUndo = () =&gt; {
-  const entry = undoStack.popUndo();
+  const entry = undoStack.pop();
   if (entry?.kind === 'edit') {
     applyEdit({
       ...entry.change,
@@ -1388,7 +1403,7 @@ const onUndo = () =&gt; {
           <h3>크기 조정</h3>
           <ul class="bullets">
             <li>헤더 경계 드래그로 너비 / 높이 조절.</li>
-            <li>헤더 경계 더블클릭 → AutoFit.</li>
+            <li>열 헤더 경계 더블클릭 → 내용맞춤(AutoFit). 행 헤더 경계 더블클릭 → 기본 높이로 리셋.</li>
             <li>다중 헤더 선택 시 일괄 적용.</li>
             <li>최소값은 <code>minColumnWidth</code> / <code>minRowHeight</code>로 제어.</li>
           </ul>
@@ -1423,6 +1438,16 @@ const onUndo = () =&gt; {
               </p>
             </li>
             <li><span class="name">onColumnsReorder</span><span class="type">(payload: ColumnsReorderPayload) =&gt; void</span></li>
+            <li>
+              <span class="name">행 / 열 숨김</span><span class="type">내부 상태 (콜백 아님)</span>
+              <p class="desc">
+                숨김 / 다시 표시는 <strong>그리드 내부 visibility 상태</strong>로 처리됩니다
+                (틀 고정과 동일하게 컨슈머 콜백이 없음). 우클릭 메뉴의 "숨기기 / 숨김 취소"
+                또는 <code>Ctrl+9</code>·<code>Ctrl+0</code>(숨김), <code>Ctrl+Shift+9</code>·<code>Ctrl+Shift+0</code>(다시 표시)로
+                동작하며, 좌표 매핑은 그리드가 알아서 보정합니다. 관련 payload
+                (<code>RowsHidePayload</code> 등)는 내부 전용이라 root export 되지 않습니다.
+              </p>
+            </li>
           </ul>
 
           <h3>틀 고정</h3>
@@ -1735,12 +1760,12 @@ export function Org() {
             <li>
               <span class="name">sortState / onSortStateChange</span>
               <span class="type">SortState | (next: SortState) =&gt; void</span>
-              <p class="desc">컨트롤드 정렬. 둘 다 넘기면 클릭-투-정렬 헤더 화살표가 활성화.</p>
+              <p class="desc">컨트롤드 정렬. <code>onSortStateChange</code>를 넘기면 클릭-투-정렬 헤더 화살표가 활성화됩니다. <code>sortState</code>는 현재 정렬 상태 표시와 다음 상태 계산에 쓰입니다(활성화 조건 아님).</p>
             </li>
             <li>
               <span class="name">filterState / onFilterStateChange</span>
               <span class="type">FilterState | (next: FilterState) =&gt; void</span>
-              <p class="desc">컨트롤드 필터. 둘 다 넘기면 헤더 필터 버튼이 활성화.</p>
+              <p class="desc">컨트롤드 필터. <code>onFilterStateChange</code>를 넘기면 헤더 필터 버튼이 활성화됩니다. <code>filterState</code>는 현재 필터 상태 표시와 다음 상태 계산에 쓰입니다(활성화 조건 아님).</p>
             </li>
             <li>
               <span class="name">filterPanelRows</span
@@ -1796,7 +1821,8 @@ return (
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import { valueToFilterKey, type FilterState } from 'hyper-xl';
+                <pre><code class="language-tsx">import { useMemo, useState } from 'react';
+import { XlReact, valueToFilterKey, type FilterState } from 'hyper-xl';
 
 const [filterState, setFilterState] = useState&lt;FilterState&gt;({});
 
@@ -1880,10 +1906,11 @@ const BLANK_FILTER_KEY = '__xl_react_blank__';</code></pre>
               <div class="codeblock" data-lang="typescript">
                 <pre><code class="language-typescript">import { processInChunks } from 'hyper-xl';
 
-await processInChunks(largePasteCells, {
-  chunkSize: 500,
-  onChunk: (chunk) =&gt; applyEdits(chunk),
-});</code></pre>
+await processInChunks(
+  largePasteCells,
+  (cell) =&gt; applyEdit(cell),
+  { chunkSize: 500 },
+);</code></pre>
               </div>
             </div>
           </details>
@@ -1919,10 +1946,16 @@ await processInChunks(largePasteCells, {
               <tr><td><code>Tab</code> / <code>→</code></td><td>편집 모드 AutoComplete 후보 채택 (<code>→</code>는 캐럿이 끝일 때만, §2.3)</td></tr>
               <tr><td><code>Delete</code></td><td>값 삭제</td></tr>
               <tr><td><code>Ctrl+1</code></td><td><code>onCellFormatRequest</code></td></tr>
-              <tr><td><code>Ctrl+Z / Y / Shift+Z</code></td><td>실행 취소 / 다시 실행</td></tr>
+              <tr><td><code>Ctrl+Z</code> / <code>Ctrl+Y</code> / <code>Ctrl+Shift+Z</code></td><td>실행 취소 / 다시 실행 / 다시 실행</td></tr>
               <tr><td><code>Ctrl+C / X / V</code></td><td>복사 / 잘라내기 / 붙여넣기</td></tr>
               <tr><td><code>Ctrl+Shift+C / V</code></td><td>서식 복사 / 서식 붙여넣기: Format Painter (§7.3)</td></tr>
               <tr><td><code>Ctrl+D / R / Enter</code></td><td>채우기 (아래 / 오른쪽 / 선택)</td></tr>
+              <tr><td><code>Ctrl+F</code> / <code>Ctrl+H</code></td><td>검색 / 바꾸기 다이얼로그 (§9)</td></tr>
+              <tr><td><code>Ctrl+G</code> / <code>F5</code></td><td>셀로 이동 다이얼로그</td></tr>
+              <tr><td><code>Ctrl+Space</code> / <code>Shift+Space</code></td><td>활성 열 / 활성 행 선택</td></tr>
+              <tr><td><code>Ctrl+9</code> / <code>Ctrl+0</code></td><td>선택 행 / 열 숨기기</td></tr>
+              <tr><td><code>Ctrl+Shift+9</code> / <code>Ctrl+Shift+0</code></td><td>선택 주변의 숨긴 행 / 열 다시 표시</td></tr>
+              <tr><td><code>Ctrl+;</code> / <code>Ctrl+Shift+;</code></td><td>오늘 날짜 / 현재 시각 입력 (<code>onCellChange</code> 경로)</td></tr>
             </tbody>
           </table>
 
@@ -2083,7 +2116,9 @@ const next = replaceInValue('Box 12', 'box', 'Crate', {
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">const [zoom, setZoom] = useState(1);
+                <pre><code class="language-tsx">import { useState } from 'react';
+
+const [zoom, setZoom] = useState(1);
 
 return (
   &lt;&gt;
@@ -2164,11 +2199,13 @@ return (
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import {
+                <pre><code class="language-tsx">import { useEffect } from 'react';
+import {
   XlReact,
   SplitPaneView,
   useWorkbookBroadcast,
   openSheetInNewWindow,
+  type Row,
 } from 'hyper-xl';
 
 function WorkbookView({ columns, rows, setRows }) {
@@ -3018,7 +3055,7 @@ function Sheet() {
             <li><strong>표시(Display)와 편집(Edit) 분리</strong>: <code>cellRenderer</code>는 화면 표시 전용, <code>cellEditor</code>는 F2 · 더블클릭 · 타이핑으로 진입하는 편집 전용입니다. 둘 다 선택적이며, 없으면 기본 텍스트 표시 / 기본 입력 에디터로 폴백합니다(기존 동작 무변경).</li>
             <li><strong>두 레벨 지정</strong>: 컬럼 단위(<code>Column.cellRenderer</code> · <code>Column.cellEditor</code>)와 셀 단위(<code>cellRenderers</code> prop). 셀 단위가 컬럼 단위를 오버라이드합니다.</li>
             <li><code>cellRenderers</code>는 <code>cellFormats</code> · <code>cellAnnotations</code>와 동일한 <em>리졸버 패턴</em>입니다: <code>"row:col"</code> 키의 sparse 맵, 또는 <code>(rowIndex, columnIndex) =&gt; CellRenderer | undefined</code> 함수.</li>
-            <li>표시 렌더러 props: <code>{ value, row, column, rowIndex, columnIndex, isEditing }</code>. 편집 렌더러는 여기에 <code>{ onCommit, onCancel, mode, initialDraft }</code>가 더해집니다.</li>
+            <li>표시 렌더러 props: <code>{ value, row, column, rowIndex, columnIndex, isEditing }</code>. 단, <strong>표시 렌더러는 편집 중에는 호출되지 않으므로</strong>(편집 셀은 비워지고 에디터 오버레이가 대신 그려짐) <code>isEditing</code>은 항상 <code>false</code>입니다 — <code>isEditing: true</code>는 편집 렌더러에서만 전달됩니다. 편집 렌더러는 여기에 <code>{ onCommit, onCancel, mode, initialDraft }</code>가 더해집니다.</li>
             <li><strong>편집기는 컴포넌트로 마운트</strong>됩니다(자체 fiber): <code>useState</code> 등 훅으로 드래프트 상태를 자유롭게 관리할 수 있습니다. 반면 <strong>표시 렌더러는 순수 함수</strong>로 호출되므로 최상위에서 훅을 쓰지 마세요(상태가 필요하면 자식 컴포넌트를 렌더). 타이핑으로 진입하면 <code>mode='overwrite'</code> · <code>initialDraft</code>에 그 키가 담겨 옵니다. (그리드는 에디터 영역의 <code>user-select</code>를 복원하므로 입력·텍스트 선택이 정상 동작합니다.)</li>
             <li><code>onCommit(next, nav?)</code>은 <strong>타입을 보존</strong>합니다: 입력한 값(숫자 · 객체 등)이 강제 변환 없이 <code>onCellChange</code>로 흐릅니다. <code>nav</code>(<code>'enter' | 'tab' | 'shift-tab' | 'shift-enter' | 'none'</code>)로 커밋 후 활성 셀 이동을 내장 에디터처럼 제어합니다. <code>next</code>가 현재 값과 같으면 커밋이 일어나지 않습니다.</li>
             <li><strong>가상 스크롤 호환</strong>: 셀은 <code>React.memo</code>로 비교되며 <code>cellRenderer</code> 정체성이 같으면 재렌더를 건너뜁니다. 렌더러를 모듈 스코프나 <code>useMemo</code>로 안정화하세요. 매 렌더마다 새 함수를 넘기면 모든 셀이 다시 그려집니다. 리졸버 함수형도 같은 참조를 돌려주는 패턴을 권장합니다.</li>
@@ -3327,7 +3364,7 @@ function Sheet() {
               </p>
             </li>
             <li>
-              <span class="name">CellFormatToolbar</span
+              <span class="name">CellMergeToolbar</span
               ><span class="type">component (merges, onMergesChange, onMergeClearCovered)</span>
               <p class="desc">
                 <code>merges</code> / <code>onMergesChange</code>를 넘기면 병합 / 병합 해제 /
@@ -3427,7 +3464,7 @@ function Sheet() {
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
                 <pre><code class="language-tsx">import { useMemo } from 'react';
-import { cellAnnotationKey, type CellAnnotationsMap } from 'hyper-xl';
+import { XlReact, cellAnnotationKey, type CellAnnotationsMap } from 'hyper-xl';
 
 const annotations: CellAnnotationsMap = useMemo(() =&gt; {
   const map: Record&lt;string, string&gt; = {};
@@ -3811,8 +3848,9 @@ const ok = isValueInList('KRPUS', options ?? []);</code></pre>
               <span class="name">parseFormula</span
               ><span class="type">(input: string) =&gt; FormulaAst | FormulaParseError</span>
               <p class="desc">
-                선두 <code>=</code> 유무와 무관하게 동작. 함수 호출, 절대 참조 등
-                미지원 입력은 <code>FormulaParseError</code>(<code>'#NAME?'</code> /
+                선두 <code>=</code> 유무와 무관하게 동작. <code>$A$1</code> 같은
+                절대 참조는 지원합니다. 함수 호출, 범위 등 미지원 입력은
+                <code>FormulaParseError</code>(<code>'#NAME?'</code> /
                 <code>'#REF!'</code>)로 거부합니다.
               </p>
             </li>
@@ -3872,7 +3910,8 @@ const ok = isValueInList('KRPUS', options ?? []);</code></pre>
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import { FormulaSheet, XlReact } from 'hyper-xl';
+                <pre><code class="language-tsx">import { useMemo, useRef, useState } from 'react';
+import { FormulaSheet, XlReact } from 'hyper-xl';
 
 // 컨슈머 소유. 시트는 raw + 평가 결과 + 의존 그래프를 보관합니다.
 const sheetRef = useRef&lt;FormulaSheet | null&gt;(null);
@@ -3997,8 +4036,9 @@ shiftFormulaRefs('=$A$1+B1', 5, 2);
               <code>activeRef</code>로 스냅백.
             </li>
             <li>
-              <code>readOnly</code>는 입력칸만 잠그고 컴포넌트는 그대로 렌더,
-              <code>disabled</code>는 그레이드아웃 + 상호작용 차단.
+              <code>readOnly</code>는 수식 입력칸과 이름 상자를 모두 잠가 편집 진입과
+              commit을 막되 컴포넌트는 그대로 렌더(포커스된 read-only input의 Enter도
+              commit하지 않음), <code>disabled</code>는 그레이드아웃 + 상호작용 차단.
             </li>
             <li>
               v1 한계: 그리드 내 <code>CellEditor</code>의 in-progress draft와 양방향
@@ -4072,7 +4112,14 @@ shiftFormulaRefs('=$A$1+B1', 5, 2);
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import { FormulaBar, FormulaSheet, XlReact, coordToA1 } from 'hyper-xl';
+                <pre><code class="language-tsx">import { useRef, useState } from 'react';
+import {
+  FormulaBar,
+  FormulaSheet,
+  XlReact,
+  coordToA1,
+  type SelectionSnapshot,
+} from 'hyper-xl';
 
 // 컨슈머가 보관하는 시트 인스턴스 (참조 안정성 위해 ref).
 const sheetRef = useRef&lt;FormulaSheet | null&gt;(null);
@@ -4325,7 +4372,8 @@ return (
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import {
+                <pre><code class="language-tsx">import { useState } from 'react';
+import {
   ExportButton,
   ImportDialog,
   defaultExportFilename,
@@ -4393,8 +4441,11 @@ const result = await importFromXlsx(file, {
 });
 
 // CSV: ExcelJS 없이 순수 함수
-const csv = exportToCsv({ rows, columns }, { delimiter: ',', bom: true });
-const csvResult = importFromCsv(csv);</code></pre>
+// exportToCsv는 기본적으로 헤더를 쓰지 않고(includeHeader 기본 false),
+// importFromCsv는 기본적으로 첫 행을 헤더로 봅니다(includeHeader 기본 true).
+// 라운드트립을 맞추려면 양쪽 includeHeader를 명시하세요.
+const csv = exportToCsv({ rows, columns }, { delimiter: ',', bom: true, includeHeader: true });
+const csvResult = importFromCsv(csv, { includeHeader: true });</code></pre>
               </div>
             </div>
           </details>
@@ -4433,8 +4484,9 @@ const blob = await exportMultiSheetXlsx([
           <p class="meta-row">
             <span class="pill feature">Feature</span><span class="pill high">High</span>
             PRD §10A: Row / Column / Value / Filter 네 영역의 드래그&amp;드롭 빌더,
-            9가지 집계, 6가지 값 표시 형식(일반 / 총합계 % / 열 % / 행 % / 부모 행 % /
-            부모 열 %), 행·열 칩에서의 그룹화(날짜: 연/분기/월/주/일 · 숫자: 임의
+            9가지 집계, 값 표시 형식 총 13가지(P1 6가지: 일반 / 총합계 % / 열 % / 행 % /
+            부모 행 % / 부모 열 % + §10A.4 P2 계산 모드 7가지: 차이 / % 차이 / 누계 /
+            % 누계 / 오름차순·내림차순 순위 / 인덱스), 행·열 칩에서의 그룹화(날짜: 연/분기/월/주/일 · 숫자: 임의
             구간), 총합계 행·열, 단일 피벗 새로 고침, 피벗 차트(막대·선·원형)까지
             포함된 MVP. 결과 표는 라이브러리 표준 <code>&lt;XlReact&gt;</code> 그리드로
             렌더되어 셀 선택 · 키보드 네비 · 클립보드 · 줌 · Freeze 등 그리드의
@@ -4459,7 +4511,7 @@ const blob = await exportMultiSheetXlsx([
               값 셀의 숫자는 <code>Intl.NumberFormat</code>(최대 소수 4자리)으로 자동 포맷됩니다.
             </li>
             <li>
-              <code>aggregate(kind, values)</code>: 9가지 집계의 단일 디스패처(<code>sum</code>
+              <code>pivotAggregate(kind, values)</code>: 9가지 집계의 단일 디스패처(<code>sum</code>
               · <code>count</code> · <code>countA</code> · <code>average</code> · <code>max</code>
               · <code>min</code> · <code>stdDev</code> · <code>variance</code> · <code>product</code>).
               비숫자(<code>NaN</code>, <code>±Infinity</code>, 객체, boolean)는 버킷을 오염시키지
@@ -4545,7 +4597,7 @@ const result = buildPivot(shipments, config);
 // result.rowPaths       → [['부산'], ['인천']]
 // result.columnPaths    → [['컨테이너'], ['벌크']]
 // result.grandTotalRow  → [40, 12]    // 컨테이너 / 벌크 총합
-// result.grandTotalCol  → [15, 37]    // 부산 / 인천 총합
+// result.grandTotalColumn → [15, 37]  // 부산 / 인천 총합
 // result.grandTotal     → [52]        // 전체 총합: 원본에서 다시 계산</code></pre>
               </div>
             </div>
@@ -4563,9 +4615,9 @@ const result = buildPivot(shipments, config);
 const rows: Row[] = /* ... 원본 행들 ... */;
 
 const fields: PivotAvailableField[] = [
-  { key: 'region',  label: '양하항',  type: 'string' },
-  { key: 'product', label: '품종',    type: 'string' },
-  { key: 'team',    label: '부서',    type: 'string' },
+  { key: 'region',  label: '양하항',  type: 'text' },
+  { key: 'product', label: '품종',    type: 'text' },
+  { key: 'team',    label: '부서',    type: 'text' },
   { key: 'qty',     label: '수량',    type: 'number' },
   { key: 'weight',  label: '선적량',  type: 'number' },
 ];
@@ -4723,8 +4775,8 @@ const result = buildPivot(rows, config);
             원래 값 버킷으로 떨어져: 그룹과 비-그룹 행이 같은 결과에 공존할 수 있습니다.
           </p>
           <p>
-            엔진은 <code>readField</code> 단계에서 <code>bucketize(raw, field.grouping)</code> 를
-            적용하므로 모든 후속 경로(헤더 트리 · 부모 버킷 · % 모드 분모)는 변경 없이
+            엔진은 내부 <code>readField</code> 단계에서 값을 버킷으로 정규화(<code>bucketize</code>,
+            비공개 구현)하므로 모든 후속 경로(헤더 트리 · 부모 버킷 · % 모드 분모)는 변경 없이
             동작합니다. 즉, <em>분기로 묶은 행 × 분기로 묶은 열</em> 위에서도 §10A.4의
             <code>percentOfParentRow</code> 같은 표시 형식이 그대로 의미를 가집니다.
           </p>
@@ -5097,8 +5149,9 @@ function ShipmentPivot({ rows }: { rows: Row[] }) {
 
           <h3>프리셋 피벗 (§10A.11 P1)</h3>
           <p>
-            배선 시스템에서 자주 만들 것으로 예상되는 피벗 구성 5종을 즉시 적용할 수
-            있도록 <code>PivotConfig</code> 프리셋과 해당 프리셋을 검증할 수 있는 가짜
+            배선 시스템에서 자주 만들 것으로 예상되는 피벗 구성을 즉시 적용할 수
+            있도록 <code>PivotConfig</code> 프리셋(P1 5종 + §10A.11 P2 3종 = 현재 8종)과
+            해당 프리셋을 검증할 수 있는 가짜
             배선 데이터셋(<em>fake wiring manifest</em>)을 함께 제공합니다.
             <code>PivotBuilder</code> 의 <code>initialConfig</code> 또는
             <code>buildPivot</code> 에 그대로 주입하면 됩니다.
@@ -5107,11 +5160,13 @@ function ShipmentPivot({ rows }: { rows: Row[] }) {
             <li>
               <span class="name">WIRING_PIVOT_PRESETS</span><span class="type">ReadonlyArray&lt;WiringPivotPreset&gt;</span>
               <p class="desc">
-                5종의 프리셋을 순서대로 노출하는 <strong>frozen</strong> 배열. 첫 세
+                프리셋을 순서대로 노출하는 <strong>frozen</strong> 배열. 첫 세
                 항목은 "배선신청 합계" 패밀리(<em>양하항별 / 품종별 / 부서별</em>),
                 넷째 항목은 행=양하항 × 열=월(<code>shipDate</code> 의 §10A.5 월 그룹화)
                 기준 선적량 누계, 다섯째 항목은 부서×월 기준 선적량을
                 <code>percentOfRow</code> (§10A.4) 로 표시하는 "계획 대비 실적 비율 (%)" 입니다.
+                이후 §10A.11 P2 에서 항차·면허·생산 진척 기반 3종이 추가되어
+                현재 배열은 <strong>총 8종</strong>을 담습니다.
               </p>
             </li>
             <li>
@@ -5135,8 +5190,9 @@ function ShipmentPivot({ rows }: { rows: Row[] }) {
             <li>
               <span class="name">WIRING_PRESET_FIELDS</span><span class="type">ReadonlyArray&lt;PivotAvailableField&gt;</span>
               <p class="desc">
-                위 데이터셋과 1:1 로 맞춰 둔 필드 디스크립터 목록. 양하항 · 품종 ·
-                부서 · 월 · 선적일 · 수량 · 선적량(t) · 계획(t) 순서로 노출됩니다.
+                위 데이터셋과 1:1 로 맞춰 둔 필드 디스크립터 목록(총 11개). 양하항 · 품종 ·
+                부서 · 월 · 선적일 · 수량 · 선적량(t) · 계획(t) · 항차 · 면허 상태 ·
+                생산 진척(%) 순서로 노출됩니다.
                 <code>PivotBuilder</code> 의 <code>availableFields</code> 에 그대로 넘기면
                 프리셋과 데이터셋이 손대지 않고 결합됩니다.
               </p>
@@ -5245,12 +5301,14 @@ export function WiringPresetShowcase() {
           <h3>값 표시 형식: 계산 모드 (§10A.4 P2)</h3>
           <p>
             P1 의 5가지 % 모드에 더해 Excel 의 "Show Values As" 계산 패밀리
-            7가지가 추가되었습니다. 모두 <em>축(axis)</em> 개념을 가지며,
+            7가지가 추가되었습니다(전체 <code>PivotValueDisplay</code> 는 총 13가지).
+            이 중 <code>index</code> 는 <code>(셀 × 총합) / (행합 × 열합)</code> 의 양축
+            대칭 공식이라 축 개념이 없고, 나머지 6가지가 <em>축(axis)</em> 개념을 가져
             <code>PivotValueField.valueDisplayAxis</code> (<code>'column'</code>
             기본 / <code>'row'</code>) 로 어느 방향을 따라 변환할지 결정합니다.
-            축이 의미를 갖는 모드(<code>PIVOT_VALUE_DISPLAY_AXIS_AWARE</code>)는
-            빌더 UI 에서 표시 형식 옆에 <strong>계산 방향</strong> 드롭다운이
-            자동 표시됩니다.
+            축이 의미를 갖는 모드(내부 집합 <code>PIVOT_VALUE_DISPLAY_AXIS_AWARE</code>
+            — 패키지로 export 되지 않는 구현 디테일)는 빌더 UI 에서 표시 형식 옆에
+            <strong>계산 방향</strong> 드롭다운이 자동 표시됩니다.
           </p>
           <ul class="props">
             <li>
@@ -5309,7 +5367,8 @@ export function WiringPresetShowcase() {
             <strong>수동 그룹</strong> 팝오버를 엽니다. 한 그룹은
             <code>{ label, values: [...] }</code> 로 정의되며, 같은 그룹 안의 값들은
             그룹 라벨 하나로 합쳐집니다. 매칭은
-            <code>groupKeyOf</code> 기준의 canonical equality 라서 <code>'1'</code>
+            엔진 내부의 canonical equality(<code>groupKeyOf</code>, 비공개 구현)
+            기준이라 <code>'1'</code>
             과 <code>1</code> 같은 정수형 표현도 동일하게 묶입니다. 매칭되지 않는
             값은 원래 라벨로 그대로 표시됩니다.
           </p>
@@ -5320,9 +5379,13 @@ export function WiringPresetShowcase() {
             토글하면 해당 그룹의 모든 리프 행이 숨겨지고 부분합 행이
             강제 표시됩니다 (<code>subtotalPosition: 'none'</code> 이어도 강제 노출).
             "모두 접기" / "모두 펼치기" / "드릴 업"(가장 안쪽 행 필드 제거) 액션도
-            함께 제공됩니다. 접힘 상태는
-            <code>PivotGridAdapterOptions.collapsedRowGroupKeys</code> 로 어댑터에
-            전달되며, 키는 <code>pivotRowGroupKey(path)</code> 로 생성합니다.
+            함께 제공됩니다. 접힘 상태는 root export 된
+            <code>pivotResultToGrid(result, labels?, layout?, adapterOptions?)</code> 의
+            네 번째 인자 <code>adapterOptions.collapsedRowGroupKeys</code> 로 전달합니다.
+            <span class="note">참고: 옵션 타입 <code>PivotGridAdapterOptions</code> 와 키 빌더
+            <code>pivotRowGroupKey(path)</code> 는 공개 패키지 API(root export)에는 노출되지 않습니다 —
+            <code>collapsedRowGroupKeys</code>(<code>ReadonlySet&lt;string&gt;</code>)에는
+            <code>PivotGridSnapshot.collapsibleRowGroups[].pathKey</code> 값을 그대로 담으면 됩니다.</span>
           </p>
 
           <h3>슬라이서 · 타임라인 (§10A.6 P2)</h3>
@@ -5434,12 +5497,15 @@ export function WiringPresetShowcase() {
             <li>
               <span class="name">autoRefreshIntervalMs</span><span class="type">number | null</span>
               <p class="desc">
-                <code>setInterval</code> 기반 주기적 재계산.
-                <code>PivotRefreshScope</code> 안에서는 같은 scope 의 모든 피벗에
-                fan-out 됩니다. <code>0</code> / <code>null</code> / 생략 시 타이머
-                비활성. 라이브러리는 <code>usePivotAutoRefresh(intervalMs, opts)</code>
-                훅을 직접 노출하므로 빌더 밖의 커스텀 툴바에서도 동일한 동작을
-                구현할 수 있습니다.
+                <code>setInterval</code> 기반 주기적 재계산. 이는 <strong>해당 빌더만</strong>
+                재계산하는 <em>per-pivot</em> 타이머입니다 — <code>PivotRefreshScope</code>
+                안에 있어도 자신의 로컬 nonce 만 올리고 scope 전체로 fan-out 하지
+                <em>않습니다</em>(같은 cadence 의 타이머가 N개 피벗에 각각 깔리는 중복을
+                피하기 위함). scope 의 모든 피벗을 하나의 cadence 로 함께 갱신하려면
+                <code>usePivotAutoRefresh(intervalMs, opts)</code> 훅을 scope 레벨에서
+                (예: 공용 툴바에서) 한 번 호출하세요 — 이 훅은 scope nonce 를 올려
+                모든 피벗이 같이 재계산됩니다. <code>0</code> / <code>null</code> / 생략 시
+                타이머 비활성.
               </p>
             </li>
             <li>
@@ -5458,7 +5524,7 @@ export function WiringPresetShowcase() {
             DB 쿼리 · 외부 피드 같은 변동 가능한 출처에서 흘러들 때는
             <strong>RowSource 어댑터</strong> 와 짝을 이루는 hook 으로
             연결하면 별도 &lsquo;새로 고침&rsquo; 클릭 없이 자동으로 재계산됩니다.
-            네 가지 팩토리와 두 가지 hook 이 노출됩니다.
+            네 가지 팩토리와 세 가지 hook 이 노출됩니다.
           </p>
           <ul class="props">
             <li>
@@ -5545,7 +5611,8 @@ export function WiringPresetShowcase() {
             / 초기값 복원 버튼이 같은 패턴을 라이브로 보여줍니다.
           </p>
           <p class="code-block">
-            <pre><code class="language-tsx">import { PivotBuilder, dynamicRowSource, useRowSource } from 'hyper-xl';
+            <pre><code class="language-tsx">import { useMemo } from 'react';
+import { PivotBuilder, dynamicRowSource, useRowSource, type Row } from 'hyper-xl';
 
 function ExternalPivot({ seed }: { seed: Row[] }) {
   const source = useMemo(() =&gt; dynamicRowSource(seed), []);
@@ -5844,7 +5911,8 @@ const series = pivotResultToChartSeries(result, {
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import {
+                <pre><code class="language-tsx">import { useEffect, useRef, useState } from 'react';
+import {
   XlReact,
   SheetTabBar,
   useWorkbook,
@@ -5888,8 +5956,16 @@ function Workbook() {
       &lt;XlReact
         columns={columns}
         rows={active.rows}
-        onChange={(rows) =&gt;
-          setData((m) =&gt; ({ ...m, [workbook.activeSheet.id]: { rows } }))
+        onCellChange={(change) =&gt;
+          setData((m) =&gt; {
+            const sheetId = workbook.activeSheet.id;
+            const rows = m[sheetId].rows.map((row, i) =&gt;
+              i === change.coord.row
+                ? { ...row, data: { ...row.data, [change.columnId]: change.nextValue } }
+                : row,
+            );
+            return { ...m, [sheetId]: { rows } };
+          })
         }
         readOnly={!!workbook.activeSheet.protected}
       /&gt;
@@ -5911,21 +5987,25 @@ function Workbook() {
                 <pre><code class="language-tsx">import {
   workbookToMultiSheetEntries,
   exportMultiSheetXlsx,
+  triggerBlobDownload,
 } from 'hyper-xl';
 
 async function exportWorkbook() {
+  // getSnapshot 콜백은 sheetId가 아니라 Sheet 객체를 받습니다.
   const entries = workbookToMultiSheetEntries(
     workbook.workbook,
-    (sheetId) =&gt; ({
-      rows: data[sheetId].rows,
+    (sheet) =&gt; ({
+      rows: data[sheet.id].rows,
       columns,
-      cellFormats: formats[sheetId],
-      merges: merges[sheetId],
+      cellFormats: formats[sheet.id],
+      merges: merges[sheet.id],
     }),
     // includeHidden 기본값은 false: 숨김 시트는 자동으로 빠집니다.
     { defaults: { dateFormat: 'yyyy-mm-dd' } },
   );
-  await exportMultiSheetXlsx(entries, 'workbook.xlsx');
+  // exportMultiSheetXlsx는 Blob을 반환 — 파일 저장은 triggerBlobDownload로.
+  const blob = await exportMultiSheetXlsx(entries);
+  triggerBlobDownload(blob, 'workbook.xlsx');
 }</code></pre>
               </div>
             </div>
@@ -5945,12 +6025,12 @@ async function exportWorkbook() {
           <h3>API 표면</h3>
           <ul class="props">
             <li>
-              <span class="name">Workbook</span><span class="type">{ sheets: Sheet[]; activeSheetId: SheetId }</span>
+              <span class="name">Workbook</span><span class="type">{ sheets: ReadonlyArray&lt;Sheet&gt;; activeSheetId: SheetId }</span>
               <p class="desc">순수 직렬화 가능한 모양: 클래스 인스턴스나 클로저가 없어 그대로 저장 / 복원 가능.</p>
             </li>
             <li>
-              <span class="name">Sheet</span><span class="type">{ id: SheetId; name: string; color?: string; hidden?: true; protected?: true }</span>
-              <p class="desc"><code>hidden</code> / <code>protected</code>는 켜진 상태만 키로 존재: 외부 동등 비교를 깨끗하게 유지하려 false는 저장하지 않습니다.</p>
+              <span class="name">Sheet</span><span class="type">{ id: SheetId; name: string; color?: string | null; hidden?: boolean; protected?: boolean }</span>
+              <p class="desc"><code>hidden</code> / <code>protected</code>는 켜진 상태만 키로 두는 것을 권장: 외부 동등 비교를 깨끗하게 유지하려 false는 저장하지 않습니다. <code>color</code>는 <code>null</code>로 "색 없음"을 표현할 수 있습니다.</p>
             </li>
             <li>
               <span class="name">WorkbookAction</span><span class="type">discriminated union</span>
@@ -5967,7 +6047,7 @@ async function exportWorkbook() {
 
         <section class="entry anchor-target" id="api-xlreact-props">
           <h2>API: XlReactProps</h2>
-          <p>선언 순서대로 정리한 전체 prop 표. 자세한 맥락은 각 기능 섹션을 참조하세요.</p>
+          <p>기능별로 정리한 전체 prop 표. 자세한 맥락은 각 기능 섹션을 참조하세요.</p>
 
           <h3>데이터</h3>
           <ul class="props">
@@ -6047,8 +6127,20 @@ async function exportWorkbook() {
               ><span class="type">CellFormatResolver | CellFormatsMap</span>
             </li>
             <li>
-              <span class="name">CellFormatToolbar</span
-              ><span class="type">{ selection, cellFormats: CellFormatsMap, onCellFormatsChange }</span>
+              <span class="name">onCellFormatsChange</span
+              ><span class="type">(next: CellFormatsMap) =&gt; void</span>
+            </li>
+            <li>
+              <span class="name">borderDrawTool</span
+              ><span class="type">BorderDrawTool | null</span>
+            </li>
+            <li>
+              <span class="name">borderDrawSide</span
+              ><span class="type">CellBorderSide</span>
+            </li>
+            <li>
+              <span class="name">merges</span
+              ><span class="type">ReadonlyArray&lt;SelectionRange&gt;</span>
             </li>
           </ul>
 
@@ -6114,7 +6206,12 @@ async function exportWorkbook() {
 
         <section class="entry anchor-target" id="api-types">
           <h2>API: 타입 정의</h2>
-          <p><code>'hyper-xl'</code>에서 re-export. 소스는 <code>src/types/</code>.</p>
+          <p>
+            <code>'hyper-xl'</code>에서 re-export. 다수는 <code>src/types/</code>에 정의되지만,
+            일부(selection · editing · contextMenu · sortFilter · protection 계열)는
+            <code>src/XlReact/…</code> 각 모듈에서 <code>src/types/index.ts</code>가 다시
+            re-export 합니다.
+          </p>
 
           <details class="example" open>
             <summary>
@@ -6131,6 +6228,8 @@ interface Row {
   id: string | number;
   data: Record&lt;string, unknown&gt;;
   height?: number;
+  level?: number;                          // §6.4 행 계층 깊이
+  parentId?: string | number | null;       // §6.4 명시적 부모 참조
 }
 
 interface CellRendererProps&lt;T&gt; {
@@ -6305,6 +6404,8 @@ interface CellBorder {
   right?: CellBorderSide;
   bottom?: CellBorderSide;
   left?: CellBorderSide;
+  diagonalDown?: CellBorderSide;  // ╲ 셀 내부 대각선 (SVG 오버레이)
+  diagonalUp?: CellBorderSide;    // ╱ 셀 내부 대각선
 }
 interface CellFormat {
   font?: CellFont;
@@ -6329,6 +6430,8 @@ interface CellBorderPatch {
   right?: CellBorderSidePatch | null;
   bottom?: CellBorderSidePatch | null;
   left?: CellBorderSidePatch | null;
+  diagonalDown?: CellBorderSidePatch | null;
+  diagonalUp?: CellBorderSidePatch | null;
 }
 type CellFormatPatch = {
   font?: CellFontPatch | null;
@@ -6337,7 +6440,8 @@ type CellFormatPatch = {
   border?: CellBorderPatch | null;
   numberFormat?: string | null;
 };
-type CellBorderPlacement = 'outline' | 'all' | 'top' | 'right' | 'bottom' | 'left' | 'none';
+type CellBorderPlacement = 'outline' | 'all' | 'top' | 'right' | 'bottom' | 'left' | 'none'
+  | 'diagonal-down' | 'diagonal-up';
 type CellFormatPatchResolver = (
   current: CellFormat | undefined,
   coord: CellCoord,
@@ -6349,6 +6453,31 @@ interface CellFormatToolbarProps {
   onCellFormatsChange: (next: CellFormatsMap) =&gt; void;
   disabled?: boolean;
   className?: string;
+  // 글꼴 / 숫자 형식 옵션 오버라이드
+  fontFamilies?: readonly CellFormatToolbarFontOption[];
+  fontSizes?: readonly number[];
+  numberFormats?: readonly CellFormatToolbarNumberFormatOption[];
+  // 병합 통합 (CellMergeToolbar 기능을 흡수)
+  merges?: ReadonlyArray&lt;SelectionRange&gt;;
+  onMergesChange?: (next: SelectionRange[]) =&gt; void;
+  onMergeClearCovered?: (ranges: SelectionRange[]) =&gt; void;
+  mergeLabels?: CellMergeToolbarLabels;
+  // 테두리 그리기 도구
+  activeBorderTool?: BorderDrawTool | null;
+  onBorderDrawToolChange?: (tool: BorderDrawTool | null, side: CellBorderSide) =&gt; void;
+  // 조건부 서식 통합
+  conditionalRules?: readonly ConditionalRule[];
+  onConditionalRulesChange?: (next: ConditionalRule[]) =&gt; void;
+  columns?: readonly AnyColumn[];
+  conditionalFormatLabels?: Partial&lt;ConditionalFormatToolbarLabels&gt;;
+  // 셀 스타일 프리셋 통합
+  cellStyleRegistry?: CellStyleRegistry;
+  cellStyleApplyMode?: CellStyleApplyMode;
+  cellStyleLabels?: Partial&lt;CellStyleToolbarLabels&gt;;
+  // 서식 복사(Format Painter)
+  formatPainterArmed?: boolean;
+  onFormatPainterToggle?: () =&gt; void;
+  formatPainterLabel?: string;
 }
 
 function cellFormatKey(rowIndex: number, columnIndex: number): string;
@@ -6416,7 +6545,12 @@ interface ProtectedActionInfo {
 
         <section class="entry anchor-target" id="api-utilities">
           <h2>API: 유틸리티</h2>
-          <p><code>'hyper-xl'</code>에서 export하는 헬퍼.</p>
+          <p>
+            <code>'hyper-xl'</code>에서 export 하는 <strong>주요</strong> 유틸리티(대표 항목).
+            root는 이 목록 외에도 서식·조건부 서식·셀 스타일·병합·검색·피벗·시트·인쇄·수식
+            관련 헬퍼와 컴포넌트를 다수 export 합니다 — 전체 목록은 각 기능 섹션과
+            <code>src/index.ts</code>를 참고하세요.
+          </p>
 
           <ul class="props">
             <li>
@@ -6426,8 +6560,12 @@ interface ProtectedActionInfo {
             </li>
             <li>
               <span class="name">processInChunks</span
-              ><span class="type">(items, options) =&gt; Promise&lt;void&gt;</span>
-              <p class="desc">paste / fill가 사용하는 비동기 청크 반복 헬퍼.</p>
+              ><span class="type">(items, perItem, options?) =&gt; Promise&lt;void&gt;</span>
+              <p class="desc">
+                paste / fill가 사용하는 비동기 청크 반복 헬퍼. 콜백
+                <code>perItem(item, index)</code>은 두 번째 인자이며, 옵션은
+                <code>{ chunkSize?, signal? }</code>.
+              </p>
             </li>
             <li>
               <span class="name">BoundedUndoStack</span
@@ -6566,7 +6704,7 @@ interface ProtectedActionInfo {
               <tr><td><a href="#print">인쇄 (Print: 미리보기 모달 · A4/A3/A5/Letter/Legal/Tabloid 용지 + 가로/세로 · 여백 / 배율(10~400%) · 머리글·바닥글 3-zone + <code>&P/&N/&D/&T/&F/&A</code> 플레이스홀더 · 인쇄 영역 · 행/열 반복 · 페이지 나누기 미리보기 오버레이 · <code>@media print</code> 페이지 브레이크 · 순수 <code>paginate()</code> 엔진(PDF 재사용 가능))</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill med">Medium</span></td><td>2026-05-29</td></tr>
               <tr><td><a href="#view-modes">보기 모드 (View Modes: 눈금선 / 머리글 표시·숨김 · 1 / 2 / 4 분할 패널 + 스크롤 동기화 · 새 창 BroadcastChannel 동기화 · Fullscreen API)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill med">Medium</span></td><td>2026-05-28</td></tr>
               <tr><td><a href="#sheets">시트 / 탭 (Workbook: 다중 시트 모델 · 추가 / 삭제 / 이름 변경 / 탭 색상 / 드래그 재정렬 / 복제 · 숨김 · 보호(읽기 전용) · 시트별 페이로드는 컨슈머 소유 · 다중 시트 .xlsx 내보내기 브리지 · 영어 / 한국어 라벨 프리셋)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill high">High</span></td><td>2026-05-28</td></tr>
-              <tr><td><a href="#pivot">피벗 테이블 (Pivot Table: 4영역 드래그&amp;드롭 빌더 · 9가지 집계 · 6가지 값 표시 형식(%) · 행/열 그룹화(날짜 단위 · 숫자 구간) · 정렬·라벨 필터·축 값 필터(Top N / 평균 이상·이하 / 임계값) · 부분합 위치 · 보고서 형식(컴팩트/개요/표) · 빈 셀 표시값 · 총합계 · 다중 피벗 일괄 새로 고침 · 세부 정보 (Show Details: 값 셀 더블클릭으로 원본 행 추출) · 프리셋 피벗 (배선신청 합계 / 월별 누계 / 계획 대비 실적 %) · 피벗 차트 (막대 / 선 / 원형) · 외부 · 동적 데이터 원본 (RowSource 어댑터: 다른 그리드 / DB 쿼리 / 행 추가 시 자동 재계산) · XlReact 그리드로 결과 렌더)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill high">High</span></td><td>2026-05-28</td></tr>
+              <tr><td><a href="#pivot">피벗 테이블 (Pivot Table: 4영역 드래그&amp;드롭 빌더 · 9가지 집계 · 13가지 값 표시 형식(P1 % 6 + P2 계산 모드 7) · 행/열 그룹화(날짜 단위 · 숫자 구간) · 정렬·라벨 필터·축 값 필터(Top N / 평균 이상·이하 / 임계값) · 부분합 위치 · 보고서 형식(컴팩트/개요/표) · 빈 셀 표시값 · 총합계 · 다중 피벗 일괄 새로 고침 · 세부 정보 (Show Details: 값 셀 더블클릭으로 원본 행 추출) · 프리셋 피벗 (배선신청 합계 / 월별 누계 / 계획 대비 실적 %) · 피벗 차트 (막대 / 선 / 원형) · 외부 · 동적 데이터 원본 (RowSource 어댑터: 다른 그리드 / DB 쿼리 / 행 추가 시 자동 재계산) · XlReact 그리드로 결과 렌더)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill high">High</span></td><td>2026-05-28</td></tr>
               <tr><td><a href="#row-grouping">행 계층 구조 (Row Hierarchy / Grouping: 다단계 트리 + 접기/펼치기)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill med">Medium</span></td><td>2026-05-27</td></tr>
               <tr><td><a href="#import-export">가져오기 / 내보내기 (Excel · CSV · TSV: 서식 · 수식 · 다중 시트 · 컬럼 매핑 · 검증 보고)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill high">High</span></td><td>2026-05-27</td></tr>
               <tr><td><a href="#formula">수식 엔진 (Formula Engine: 사칙연산 + 셀 참조 + <code>$</code> 절대 참조 + 자동 채우기 시 상대 이동)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill med">Medium</span></td><td>2026-05-27</td></tr>

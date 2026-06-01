@@ -5,10 +5,10 @@ import { R as Row } from './Row-CO-gLrwi.js';
  * Props handed to a custom display renderer (셀 내 커스텀 요소 삽입 / Custom
  * Cell Renderer). A renderer is a plain function invoked at cell render time; it
  * receives the resolved cell value plus the row / column it belongs to and the
- * cell's 0-based grid coordinates. `isEditing` is true only while this exact
- * cell is the one being edited — most display renderers ignore it (the grid
- * blanks the cell and overlays the editor while editing), but a renderer that
- * wants to keep a static badge visible behind the editor can branch on it.
+ * cell's 0-based grid coordinates. `isEditing` is always `false` for a display
+ * renderer: while a cell is being edited the grid blanks it and overlays the
+ * editor, so the display renderer is not invoked at all. The flag is meaningful
+ * only on the editor (`CellEditorProps`), where it is `true`.
  */
 interface CellRendererProps<T = unknown> {
     row: Row;
@@ -18,7 +18,10 @@ interface CellRendererProps<T = unknown> {
     rowIndex: number;
     /** 0-based column index in the current column order. */
     columnIndex: number;
-    /** True only while this cell is the active edit target. */
+    /**
+     * `true` only on the custom editor (the active edit target). Always `false`
+     * when received by a display renderer, which is never invoked during editing.
+     */
     isEditing: boolean;
 }
 /**

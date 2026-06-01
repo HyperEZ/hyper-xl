@@ -765,7 +765,7 @@ function reducer(state: Row[], action: Action): Row[] {
                 <pre><code class="language-css">/* Change the stripe color of protected cells to the brand color */
 .xl-react-grid {
   --xl-react-readonly-stripe: rgba(255, 200, 0, 0.18);
-  --xl-react-active-border: #ff4081;
+  --xl-react-selection-border: #ff4081;
   --xl-react-selection-bg: rgba(255, 64, 129, 0.12);
 }</code></pre>
               </div>
@@ -778,9 +778,16 @@ function reducer(state: Row[], action: Action): Row[] {
         <section class="entry anchor-target" id="component">
           <h2>XlReact Component</h2>
           <p>
-            <code>XlReact</code> is the library's only public component. It operates in fully controlled mode,
+            <code>XlReact</code> is the library's core grid component. It operates in fully controlled mode,
             so the grid never owns the row data. Pass <code>columns</code> and
             <code>rows</code>, and wire up the callbacks corresponding to the features you need.
+            Beyond the grid, auxiliary components such as toolbars and dialogs
+            (<code>CellFormatToolbar</code>, <code>CellMergeToolbar</code>,
+            <code>ConditionalFormatToolbar</code>, <code>FindReplaceDialog</code>,
+            <code>ValidationDropdown</code>, <code>ExportButton</code>, <code>ImportDialog</code>,
+            <code>PivotBuilder</code>, <code>PivotChart</code>, <code>SheetTabBar</code>,
+            <code>PrintPreview</code>, <code>FormulaBar</code>, etc.) are exported from the root as
+            well — pick only the ones you need.
           </p>
 
           <div class="codeblock" data-lang="tsx">
@@ -1209,7 +1216,16 @@ interface SelectionSnapshot {
           <ul class="props">
             <li><span class="name">onCopy</span><span class="type">(payload: ClipboardCopyPayload) =&gt; void</span></li>
             <li><span class="name">onCut</span><span class="type">(payload: ClipboardCopyPayload) =&gt; void</span></li>
-            <li><span class="name">onPasteRequest</span><span class="type">(payload: PasteRequestPayload) =&gt; void</span></li>
+            <li>
+              <span class="name">onPasteRequest</span><span class="type">(payload: PasteRequestPayload) =&gt; void</span>
+              <p class="desc">
+                A <em>notification</em> fired on every Ctrl+V. It does not replace the automatic
+                paste — when not <code>readOnly</code> and <code>onCellChange</code> is wired up,
+                the automatic paste (<code>onCellChange</code>) still runs alongside it.
+                To turn off the automatic paste and handle it yourself, use it together with
+                <code>readOnly</code> (see the example below).
+              </p>
+            </li>
             <li><span class="name">onPasteSpecialRequest</span><span class="type">(payload: PasteSpecialRequestPayload) =&gt; void</span></li>
           </ul>
 
@@ -1325,7 +1341,7 @@ const onCellChange = (change: CellChange) =&gt; {
           <h3>Behavior</h3>
           <ul class="bullets">
             <li><strong>Ctrl+Z</strong> undo, <strong>Ctrl+Y</strong> / <strong>Ctrl+Shift+Z</strong> redo.</li>
-            <li>Edits, pastes, fills, deletes, cuts, and structural changes are all recorded.</li>
+            <li>Cell value changes (edit, paste, fill, delete, cut) are recorded as <code>cell-edits</code> commands. Structural changes such as row/column insert, delete, reorder, and sort are <em>currently outside the stack's scope</em> (they would require a snapshot of the consumer's row ordering).</li>
             <li>The inverse operation is replayed via <code>onCellChange</code> → the reducer must be written so that <code>(coord, prev)</code> is the inverse of a clear.</li>
             <li>Defaults: 100 entries / 8 MiB. The spec guarantees a minimum of 50 entries.</li>
           </ul>
@@ -1360,7 +1376,7 @@ const onCellChange = (change: CellChange) =&gt; {
 };
 
 const onUndo = () =&gt; {
-  const entry = undoStack.popUndo();
+  const entry = undoStack.pop();
   if (entry?.kind === 'edit') {
     applyEdit({
       ...entry.change,
@@ -1386,7 +1402,7 @@ const onUndo = () =&gt; {
           <h3>Resizing</h3>
           <ul class="bullets">
             <li>Drag a header border to adjust the width / height.</li>
-            <li>Double-click a header border → AutoFit.</li>
+            <li>Double-click a column header border → fit to content (AutoFit). Double-click a row header border → reset to the default height.</li>
             <li>Applies in bulk when multiple headers are selected.</li>
             <li>The minimum is controlled by <code>minColumnWidth</code> / <code>minRowHeight</code>.</li>
           </ul>
@@ -1421,6 +1437,17 @@ const onUndo = () =&gt; {
               </p>
             </li>
             <li><span class="name">onColumnsReorder</span><span class="type">(payload: ColumnsReorderPayload) =&gt; void</span></li>
+            <li>
+              <span class="name">Row / Column hiding</span><span class="type">internal state (not a callback)</span>
+              <p class="desc">
+                Hide / unhide is handled as <strong>internal grid visibility state</strong>
+                (no consumer callback, the same as freeze panes). It works via the right-click
+                menu's "Hide / Unhide" or <code>Ctrl+9</code>·<code>Ctrl+0</code> (hide),
+                <code>Ctrl+Shift+9</code>·<code>Ctrl+Shift+0</code> (unhide), and the grid corrects
+                the coordinate mapping on its own. The related payloads
+                (<code>RowsHidePayload</code>, etc.) are internal-only and are not exported from the root.
+              </p>
+            </li>
           </ul>
 
           <h3>Freeze panes</h3>
@@ -1732,12 +1759,12 @@ export function Org() {
             <li>
               <span class="name">sortState / onSortStateChange</span>
               <span class="type">SortState | (next: SortState) =&gt; void</span>
-              <p class="desc">Controlled sort. Passing both enables the click-to-sort header arrows.</p>
+              <p class="desc">Controlled sort. Passing <code>onSortStateChange</code> enables the click-to-sort header arrows. <code>sortState</code> is used to show the current sort state and to compute the next state (it is not the activation condition).</p>
             </li>
             <li>
               <span class="name">filterState / onFilterStateChange</span>
               <span class="type">FilterState | (next: FilterState) =&gt; void</span>
-              <p class="desc">Controlled filter. Passing both enables the header filter buttons.</p>
+              <p class="desc">Controlled filter. Passing <code>onFilterStateChange</code> enables the header filter buttons. <code>filterState</code> is used to show the current filter state and to compute the next state (it is not the activation condition).</p>
             </li>
             <li>
               <span class="name">filterPanelRows</span
@@ -1793,7 +1820,8 @@ return (
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import { valueToFilterKey, type FilterState } from 'hyper-xl';
+                <pre><code class="language-tsx">import { useMemo, useState } from 'react';
+import { XlReact, valueToFilterKey, type FilterState } from 'hyper-xl';
 
 const [filterState, setFilterState] = useState&lt;FilterState&gt;({});
 
@@ -1877,10 +1905,11 @@ const BLANK_FILTER_KEY = '__xl_react_blank__';</code></pre>
               <div class="codeblock" data-lang="typescript">
                 <pre><code class="language-typescript">import { processInChunks } from 'hyper-xl';
 
-await processInChunks(largePasteCells, {
-  chunkSize: 500,
-  onChunk: (chunk) =&gt; applyEdits(chunk),
-});</code></pre>
+await processInChunks(
+  largePasteCells,
+  (cell) =&gt; applyEdit(cell),
+  { chunkSize: 500 },
+);</code></pre>
               </div>
             </div>
           </details>
@@ -1916,10 +1945,16 @@ await processInChunks(largePasteCells, {
               <tr><td><code>Tab</code> / <code>→</code></td><td>Accept the AutoComplete suggestion in edit mode (<code>→</code> only when the caret is at the end, §2.3)</td></tr>
               <tr><td><code>Delete</code></td><td>Delete the value</td></tr>
               <tr><td><code>Ctrl+1</code></td><td><code>onCellFormatRequest</code></td></tr>
-              <tr><td><code>Ctrl+Z / Y / Shift+Z</code></td><td>Undo / Redo</td></tr>
+              <tr><td><code>Ctrl+Z</code> / <code>Ctrl+Y</code> / <code>Ctrl+Shift+Z</code></td><td>Undo / Redo / Redo</td></tr>
               <tr><td><code>Ctrl+C / X / V</code></td><td>Copy / Cut / Paste</td></tr>
               <tr><td><code>Ctrl+Shift+C / V</code></td><td>Copy format / Paste format: Format Painter (§7.3)</td></tr>
               <tr><td><code>Ctrl+D / R / Enter</code></td><td>Fill (down / right / selection)</td></tr>
+              <tr><td><code>Ctrl+F</code> / <code>Ctrl+H</code></td><td>Find / Replace dialog (§9)</td></tr>
+              <tr><td><code>Ctrl+G</code> / <code>F5</code></td><td>Go To cell dialog</td></tr>
+              <tr><td><code>Ctrl+Space</code> / <code>Shift+Space</code></td><td>Select the active column / active row</td></tr>
+              <tr><td><code>Ctrl+9</code> / <code>Ctrl+0</code></td><td>Hide selected rows / columns</td></tr>
+              <tr><td><code>Ctrl+Shift+9</code> / <code>Ctrl+Shift+0</code></td><td>Unhide hidden rows / columns around the selection</td></tr>
+              <tr><td><code>Ctrl+;</code> / <code>Ctrl+Shift+;</code></td><td>Insert today's date / current time (<code>onCellChange</code> path)</td></tr>
             </tbody>
           </table>
 
@@ -2080,7 +2115,9 @@ const next = replaceInValue('Box 12', 'box', 'Crate', {
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">const [zoom, setZoom] = useState(1);
+                <pre><code class="language-tsx">import { useState } from 'react';
+
+const [zoom, setZoom] = useState(1);
 
 return (
   &lt;&gt;
@@ -2161,11 +2198,13 @@ return (
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import {
+                <pre><code class="language-tsx">import { useEffect } from 'react';
+import {
   XlReact,
   SplitPaneView,
   useWorkbookBroadcast,
   openSheetInNewWindow,
+  type Row,
 } from 'hyper-xl';
 
 function WorkbookView({ columns, rows, setRows }) {
@@ -3013,7 +3052,7 @@ function Sheet() {
             <li><strong>Separation of Display and Edit</strong>: <code>cellRenderer</code> is display-only, and <code>cellEditor</code> is edit-only, entered via F2 · double-click · typing. Both are optional, and if absent they fall back to the default text display / default input editor (existing behavior unchanged).</li>
             <li><strong>Two-level specification</strong>: at the column level (<code>Column.cellRenderer</code> · <code>Column.cellEditor</code>) and the cell level (<code>cellRenderers</code> prop). The cell level overrides the column level.</li>
             <li><code>cellRenderers</code> follows the same <em>resolver pattern</em> as <code>cellFormats</code> · <code>cellAnnotations</code>: a sparse map keyed by <code>"row:col"</code>, or a <code>(rowIndex, columnIndex) =&gt; CellRenderer | undefined</code> function.</li>
-            <li>Display renderer props: <code>{ value, row, column, rowIndex, columnIndex, isEditing }</code>. The edit renderer adds <code>{ onCommit, onCancel, mode, initialDraft }</code> to these.</li>
+            <li>Display renderer props: <code>{ value, row, column, rowIndex, columnIndex, isEditing }</code>. However, since <strong>display renderers are never called while editing</strong> (the editing cell is cleared and the editor overlay is drawn instead), <code>isEditing</code> is always <code>false</code> for them — <code>isEditing: true</code> is only passed to edit renderers. The edit renderer adds <code>{ onCommit, onCancel, mode, initialDraft }</code> to these.</li>
             <li><strong>The editor is mounted as a component</strong> (its own fiber): you can freely manage draft state with hooks such as <code>useState</code>. By contrast, <strong>the display renderer is called as a pure function</strong>, so do not use hooks at the top level (if you need state, render a child component). When entered by typing, that key is provided in <code>mode='overwrite'</code> · <code>initialDraft</code>. (The grid restores <code>user-select</code> in the editor area, so input and text selection work correctly.)</li>
             <li><code>onCommit(next, nav?)</code> <strong>preserves the type</strong>: the entered value (number · object · etc.) flows to <code>onCellChange</code> without coercion. With <code>nav</code> (<code>'enter' | 'tab' | 'shift-tab' | 'shift-enter' | 'none'</code>) you control the active-cell movement after commit just like the built-in editor. If <code>next</code> equals the current value, no commit occurs.</li>
             <li><strong>Virtual scroll compatible</strong>: cells are compared with <code>React.memo</code> and skip re-rendering if the <code>cellRenderer</code> identity is the same. Stabilize the renderer at module scope or with <code>useMemo</code>. Passing a new function on every render redraws all cells. For the resolver-function form too, the pattern of returning the same reference is recommended.</li>
@@ -3320,7 +3359,7 @@ function Sheet() {
               </p>
             </li>
             <li>
-              <span class="name">CellFormatToolbar</span
+              <span class="name">CellMergeToolbar</span
               ><span class="type">component (merges, onMergesChange, onMergeClearCovered)</span>
               <p class="desc">
                 Passing <code>merges</code> / <code>onMergesChange</code> integrates the Merge / Unmerge /
@@ -3420,7 +3459,7 @@ function Sheet() {
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
                 <pre><code class="language-tsx">import { useMemo } from 'react';
-import { cellAnnotationKey, type CellAnnotationsMap } from 'hyper-xl';
+import { XlReact, cellAnnotationKey, type CellAnnotationsMap } from 'hyper-xl';
 
 const annotations: CellAnnotationsMap = useMemo(() =&gt; {
   const map: Record&lt;string, string&gt; = {};
@@ -3803,7 +3842,8 @@ const ok = isValueInList('KRPUS', options ?? []);</code></pre>
               <span class="name">parseFormula</span
               ><span class="type">(input: string) =&gt; FormulaAst | FormulaParseError</span>
               <p class="desc">
-                Works regardless of a leading <code>=</code>. Unsupported input such as function calls or absolute references
+                Works regardless of a leading <code>=</code>. Absolute references such as
+                <code>$A$1</code> are supported. Unsupported input such as function calls or ranges
                 is rejected as <code>FormulaParseError</code> (<code>'#NAME?'</code> /
                 <code>'#REF!'</code>).
               </p>
@@ -3862,7 +3902,8 @@ const ok = isValueInList('KRPUS', options ?? []);</code></pre>
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import { FormulaSheet, XlReact } from 'hyper-xl';
+                <pre><code class="language-tsx">import { useMemo, useRef, useState } from 'react';
+import { FormulaSheet, XlReact } from 'hyper-xl';
 
 // Consumer-owned. The sheet holds raw + evaluation results + the dependency graph.
 const sheetRef = useRef&lt;FormulaSheet | null&gt;(null);
@@ -3986,8 +4027,10 @@ shiftFormulaRefs('=$A$1+B1', 5, 2);
               <code>activeRef</code>.
             </li>
             <li>
-              <code>readOnly</code> locks only the input field while the component still renders,
-              whereas <code>disabled</code> grays it out + blocks interaction.
+              <code>readOnly</code> locks both the formula input and the name box to prevent
+              entering edit mode and committing while the component still renders (Enter on a
+              focused read-only input does not commit either), whereas <code>disabled</code> grays
+              it out + blocks interaction.
             </li>
             <li>
               v1 limitation: real-time two-way synchronization with the in-progress draft of the grid's
@@ -4059,7 +4102,14 @@ shiftFormulaRefs('=$A$1+B1', 5, 2);
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import { FormulaBar, FormulaSheet, XlReact, coordToA1 } from 'hyper-xl';
+                <pre><code class="language-tsx">import { useRef, useState } from 'react';
+import {
+  FormulaBar,
+  FormulaSheet,
+  XlReact,
+  coordToA1,
+  type SelectionSnapshot,
+} from 'hyper-xl';
 
 // The sheet instance held by the consumer (ref for reference stability).
 const sheetRef = useRef&lt;FormulaSheet | null&gt;(null);
@@ -4307,7 +4357,8 @@ return (
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import {
+                <pre><code class="language-tsx">import { useState } from 'react';
+import {
   ExportButton,
   ImportDialog,
   defaultExportFilename,
@@ -4375,8 +4426,11 @@ const result = await importFromXlsx(file, {
 });
 
 // CSV: a pure function without ExcelJS
-const csv = exportToCsv({ rows, columns }, { delimiter: ',', bom: true });
-const csvResult = importFromCsv(csv);</code></pre>
+// exportToCsv does not write a header by default (includeHeader defaults to false),
+// while importFromCsv treats the first row as a header by default (includeHeader defaults to true).
+// To make the round-trip line up, set includeHeader explicitly on both sides.
+const csv = exportToCsv({ rows, columns }, { delimiter: ',', bom: true, includeHeader: true });
+const csvResult = importFromCsv(csv, { includeHeader: true });</code></pre>
               </div>
             </div>
           </details>
@@ -4415,8 +4469,9 @@ const blob = await exportMultiSheetXlsx([
           <p class="meta-row">
             <span class="pill feature">Feature</span><span class="pill high">High</span>
             PRD §10A: an MVP that includes a drag &amp; drop builder for the four areas Row / Column / Value / Filter,
-            9 aggregations, 6 value display formats (normal / % of grand total / % of column / % of row / % of parent row /
-            % of parent column), grouping on row and column chips (date: year/quarter/month/week/day · number: arbitrary
+            9 aggregations, 13 value display formats in total (P1 6: normal / % of grand total / % of column / % of row /
+            % of parent row / % of parent column + §10A.4 P2 7 calculation modes: difference / % difference / running total /
+            % running total / ascending·descending rank / index), grouping on row and column chips (date: year/quarter/month/week/day · number: arbitrary
             intervals), grand total rows and columns, a single pivot refresh, and pivot charts (bar · line · pie). The
             result table is rendered with the library's standard <code>&lt;XlReact&gt;</code> grid, so it uses
             the grid's full UX as is: cell selection · keyboard navigation · clipboard · zoom · Freeze, and more.
@@ -4440,7 +4495,7 @@ const blob = await exportMultiSheetXlsx([
               the numbers in value cells are automatically formatted with <code>Intl.NumberFormat</code> (up to 4 decimal places).
             </li>
             <li>
-              <code>aggregate(kind, values)</code>: a single dispatcher for the 9 aggregations (<code>sum</code>
+              <code>pivotAggregate(kind, values)</code>: a single dispatcher for the 9 aggregations (<code>sum</code>
               · <code>count</code> · <code>countA</code> · <code>average</code> · <code>max</code>
               · <code>min</code> · <code>stdDev</code> · <code>variance</code> · <code>product</code>).
               Non-numeric values (<code>NaN</code>, <code>±Infinity</code>, objects, boolean) are quietly ignored without
@@ -4526,7 +4581,7 @@ const result = buildPivot(shipments, config);
 // result.rowPaths       → [['Busan'], ['Incheon']]
 // result.columnPaths    → [['Container'], ['Bulk']]
 // result.grandTotalRow  → [40, 12]    // Container / Bulk totals
-// result.grandTotalCol  → [15, 37]    // Busan / Incheon totals
+// result.grandTotalColumn → [15, 37]  // Busan / Incheon totals
 // result.grandTotal     → [52]        // overall total: recomputed from the source</code></pre>
               </div>
             </div>
@@ -4544,9 +4599,9 @@ const result = buildPivot(shipments, config);
 const rows: Row[] = /* ... original rows ... */;
 
 const fields: PivotAvailableField[] = [
-  { key: 'region',  label: 'Discharge port',  type: 'string' },
-  { key: 'product', label: 'Variety',    type: 'string' },
-  { key: 'team',    label: 'Department',    type: 'string' },
+  { key: 'region',  label: 'Discharge port',  type: 'text' },
+  { key: 'product', label: 'Variety',    type: 'text' },
+  { key: 'team',    label: 'Department',    type: 'text' },
   { key: 'qty',     label: 'Quantity',    type: 'number' },
   { key: 'weight',  label: 'Shipment volume',  type: 'number' },
 ];
@@ -4701,7 +4756,8 @@ const result = buildPivot(rows, config);
             original-value bucket, so grouped and non-grouped rows can coexist in the same result.
           </p>
           <p>
-            The engine applies <code>bucketize(raw, field.grouping)</code> at the <code>readField</code> stage, so all
+            The engine normalizes values into buckets at the internal <code>readField</code> stage
+            (<code>bucketize</code>, a private implementation), so all
             subsequent paths (header tree · parent bucket · % mode denominator) work without change.
             That is, even on top of <em>rows grouped by quarter × columns grouped by quarter</em>, a display format like
             <code>percentOfParentRow</code> from §10A.4 still keeps its meaning.
@@ -5073,8 +5129,8 @@ function ShipmentPivot({ rows }: { rows: Row[] }) {
 
           <h3>Preset Pivots (§10A.11 P1)</h3>
           <p>
-            So that the 5 pivot configurations expected to be frequently built in the wiring system can be applied instantly,
-            we provide <code>PivotConfig</code> presets together with a fake
+            So that the pivot configurations expected to be frequently built in the wiring system can be applied instantly,
+            we provide <code>PivotConfig</code> presets (P1 5 + §10A.11 P2 3 = 8 in total) together with a fake
             wiring dataset (<em>fake wiring manifest</em>) that can validate those presets.
             Just inject them as-is into <code>PivotBuilder</code>'s <code>initialConfig</code> or
             <code>buildPivot</code>.
@@ -5083,11 +5139,13 @@ function ShipmentPivot({ rows }: { rows: Row[] }) {
             <li>
               <span class="name">WIRING_PIVOT_PRESETS</span><span class="type">ReadonlyArray&lt;WiringPivotPreset&gt;</span>
               <p class="desc">
-                A <strong>frozen</strong> array that exposes the 5 presets in order. The first three
+                A <strong>frozen</strong> array that exposes the presets in order. The first three
                 items are the "wiring request total" family (<em>by discharge port / by product type / by department</em>),
                 the fourth item is the cumulative shipment volume based on rows=discharge port × columns=month (the §10A.5 month grouping of <code>shipDate</code>),
                 and the fifth item is "Actual vs. Plan ratio (%)" which shows the shipment volume based on department×month
                 with <code>percentOfRow</code> (§10A.4).
+                Later, §10A.11 P2 added 3 more based on voyage / license / production progress,
+                so the array now holds <strong>8 in total</strong>.
               </p>
             </li>
             <li>
@@ -5111,8 +5169,9 @@ function ShipmentPivot({ rows }: { rows: Row[] }) {
             <li>
               <span class="name">WIRING_PRESET_FIELDS</span><span class="type">ReadonlyArray&lt;PivotAvailableField&gt;</span>
               <p class="desc">
-                A field descriptor list aligned 1:1 with the dataset above. It is exposed in the order of
-                discharge port, product type, department, month, ship date, quantity, shipment volume (t), and plan (t).
+                A field descriptor list aligned 1:1 with the dataset above (11 in total). It is exposed in the order of
+                discharge port, product type, department, month, ship date, quantity, shipment volume (t), plan (t),
+                voyage, license status, and production progress (%).
                 If you pass it as-is to <code>PivotBuilder</code>'s <code>availableFields</code>,
                 the presets and the dataset combine untouched.
               </p>
@@ -5220,10 +5279,14 @@ export function WiringPresetShowcase() {
           <h3>Value Display Format: Calculation Modes (§10A.4 P2)</h3>
           <p>
             In addition to the 5 % modes of P1, the 7 modes of Excel's "Show Values As" calculation family
-            have been added. They all have the concept of an <em>axis</em>, and
+            have been added (the full <code>PivotValueDisplay</code> is 13 in total).
+            Among them, <code>index</code> is the two-axis symmetric formula
+            <code>(cell × grand total) / (row total × column total)</code>, so it has no axis concept,
+            while the remaining 6 have the concept of an <em>axis</em>, so
             <code>PivotValueField.valueDisplayAxis</code> (<code>'column'</code>
             default / <code>'row'</code>) determines which direction the transformation follows.
-            For modes where the axis is meaningful (<code>PIVOT_VALUE_DISPLAY_AXIS_AWARE</code>), a <strong>calculation direction</strong> dropdown
+            For modes where the axis is meaningful (the internal set <code>PIVOT_VALUE_DISPLAY_AXIS_AWARE</code>
+            — an implementation detail that is not exported from the package), a <strong>calculation direction</strong> dropdown
             is automatically shown next to the display format in the builder UI.
           </p>
           <ul class="props">
@@ -5281,8 +5344,8 @@ export function WiringPresetShowcase() {
             A <strong>⊕</strong> icon has been added to the chips of the row/column area, which opens the
             <strong>manual group</strong> popover. A group is defined as
             <code>{ label, values: [...] }</code>, and the values within the same group are
-            merged under a single group label. Matching is
-            canonical equality based on <code>groupKeyOf</code>, so integer-type representations like <code>'1'</code>
+            merged under a single group label. Matching is based on the engine's internal
+            canonical equality (<code>groupKeyOf</code>, a private implementation), so integer-type representations like <code>'1'</code>
             and <code>1</code> are grouped together as well. Values that do not match
             are shown as-is with their original labels.
           </p>
@@ -5293,9 +5356,13 @@ export function WiringPresetShowcase() {
             hides all leaf rows of that group and forces the subtotal row to
             be shown (forced exposure even if <code>subtotalPosition: 'none'</code>).
             "Collapse All" / "Expand All" / "Drill Up" (remove the innermost row field) actions are
-            also provided. The collapsed state is passed to the adapter via
-            <code>PivotGridAdapterOptions.collapsedRowGroupKeys</code>, and the
-            keys are generated with <code>pivotRowGroupKey(path)</code>.
+            also provided. The collapsed state is passed via the fourth argument
+            <code>adapterOptions.collapsedRowGroupKeys</code> of the root-exported
+            <code>pivotResultToGrid(result, labels?, layout?, adapterOptions?)</code>.
+            <span class="note">Note: the option type <code>PivotGridAdapterOptions</code> and the key builder
+            <code>pivotRowGroupKey(path)</code> are not exposed in the public package API (root export) —
+            into <code>collapsedRowGroupKeys</code> (<code>ReadonlySet&lt;string&gt;</code>) just put the
+            <code>PivotGridSnapshot.collapsibleRowGroups[].pathKey</code> values as-is.</span>
           </p>
 
           <h3>Slicers · Timeline (§10A.6 P2)</h3>
@@ -5406,12 +5473,15 @@ export function WiringPresetShowcase() {
             <li>
               <span class="name">autoRefreshIntervalMs</span><span class="type">number | null</span>
               <p class="desc">
-                Periodic recomputation based on <code>setInterval</code>.
-                Within a <code>PivotRefreshScope</code>, it fans out to all pivots of the same scope.
-                When <code>0</code> / <code>null</code> / omitted, the timer is
-                disabled. The library directly exposes the <code>usePivotAutoRefresh(intervalMs, opts)</code>
-                hook, so you can implement the same behavior in a custom toolbar outside the builder
-                as well.
+                Periodic recomputation based on <code>setInterval</code>. This is a
+                <em>per-pivot</em> timer that recomputes <strong>that builder only</strong> — even when
+                inside a <code>PivotRefreshScope</code>, it bumps only its own local nonce and does
+                <em>not</em> fan out across the whole scope (to avoid the duplication of N separate
+                timers on the same cadence being installed on N pivots). To refresh every pivot in
+                the scope on a single cadence, call the <code>usePivotAutoRefresh(intervalMs, opts)</code>
+                hook once at the scope level (e.g. in a shared toolbar) — this hook bumps the scope
+                nonce so all pivots recompute together. When <code>0</code> / <code>null</code> / omitted,
+                the timer is disabled.
               </p>
             </li>
             <li>
@@ -5429,7 +5499,7 @@ export function WiringPresetShowcase() {
             <code>ReadonlyArray&lt;Row&gt;</code> as-is, but when rows flow in from a mutable source such as a different grid,
             a DB query, or an external feed, if you connect them with a hook paired with a
             <strong>RowSource adapter</strong>, they are recomputed automatically without a separate &lsquo;Refresh&rsquo; click.
-            Four factories and two hooks are exposed.
+            Four factories and three hooks are exposed.
           </p>
           <ul class="props">
             <li>
@@ -5513,7 +5583,8 @@ export function WiringPresetShowcase() {
             / Restore Initial Value buttons show the same pattern live.
           </p>
           <p class="code-block">
-            <pre><code class="language-tsx">import { PivotBuilder, dynamicRowSource, useRowSource } from 'hyper-xl';
+            <pre><code class="language-tsx">import { useMemo } from 'react';
+import { PivotBuilder, dynamicRowSource, useRowSource, type Row } from 'hyper-xl';
 
 function ExternalPivot({ seed }: { seed: Row[] }) {
   const source = useMemo(() =&gt; dynamicRowSource(seed), []);
@@ -5807,7 +5878,8 @@ const series = pivotResultToChartSeries(result, {
             </summary>
             <div class="example-body">
               <div class="codeblock" data-lang="tsx">
-                <pre><code class="language-tsx">import {
+                <pre><code class="language-tsx">import { useEffect, useRef, useState } from 'react';
+import {
   XlReact,
   SheetTabBar,
   useWorkbook,
@@ -5851,8 +5923,16 @@ function Workbook() {
       &lt;XlReact
         columns={columns}
         rows={active.rows}
-        onChange={(rows) =&gt;
-          setData((m) =&gt; ({ ...m, [workbook.activeSheet.id]: { rows } }))
+        onCellChange={(change) =&gt;
+          setData((m) =&gt; {
+            const sheetId = workbook.activeSheet.id;
+            const rows = m[sheetId].rows.map((row, i) =&gt;
+              i === change.coord.row
+                ? { ...row, data: { ...row.data, [change.columnId]: change.nextValue } }
+                : row,
+            );
+            return { ...m, [sheetId]: { rows } };
+          })
         }
         readOnly={!!workbook.activeSheet.protected}
       /&gt;
@@ -5874,21 +5954,25 @@ function Workbook() {
                 <pre><code class="language-tsx">import {
   workbookToMultiSheetEntries,
   exportMultiSheetXlsx,
+  triggerBlobDownload,
 } from 'hyper-xl';
 
 async function exportWorkbook() {
+  // The getSnapshot callback receives a Sheet object, not a sheetId.
   const entries = workbookToMultiSheetEntries(
     workbook.workbook,
-    (sheetId) =&gt; ({
-      rows: data[sheetId].rows,
+    (sheet) =&gt; ({
+      rows: data[sheet.id].rows,
       columns,
-      cellFormats: formats[sheetId],
-      merges: merges[sheetId],
+      cellFormats: formats[sheet.id],
+      merges: merges[sheet.id],
     }),
     // The default for includeHidden is false: hidden sheets are automatically excluded.
     { defaults: { dateFormat: 'yyyy-mm-dd' } },
   );
-  await exportMultiSheetXlsx(entries, 'workbook.xlsx');
+  // exportMultiSheetXlsx returns a Blob — save the file via triggerBlobDownload.
+  const blob = await exportMultiSheetXlsx(entries);
+  triggerBlobDownload(blob, 'workbook.xlsx');
 }</code></pre>
               </div>
             </div>
@@ -5908,12 +5992,12 @@ async function exportWorkbook() {
           <h3>API surface</h3>
           <ul class="props">
             <li>
-              <span class="name">Workbook</span><span class="type">{ sheets: Sheet[]; activeSheetId: SheetId }</span>
+              <span class="name">Workbook</span><span class="type">{ sheets: ReadonlyArray&lt;Sheet&gt;; activeSheetId: SheetId }</span>
               <p class="desc">A purely serializable shape: there are no class instances or closures, so it can be saved / restored as is.</p>
             </li>
             <li>
-              <span class="name">Sheet</span><span class="type">{ id: SheetId; name: string; color?: string; hidden?: true; protected?: true }</span>
-              <p class="desc"><code>hidden</code> / <code>protected</code> exist as keys only when turned on: false is not stored, to keep external equality comparison clean.</p>
+              <span class="name">Sheet</span><span class="type">{ id: SheetId; name: string; color?: string | null; hidden?: boolean; protected?: boolean }</span>
+              <p class="desc">Keeping <code>hidden</code> / <code>protected</code> as keys only when turned on is recommended: false is not stored, to keep external equality comparison clean. <code>color</code> can express "no color" with <code>null</code>.</p>
             </li>
             <li>
               <span class="name">WorkbookAction</span><span class="type">discriminated union</span>
@@ -5930,7 +6014,7 @@ async function exportWorkbook() {
 
         <section class="entry anchor-target" id="api-xlreact-props">
           <h2>API: XlReactProps</h2>
-          <p>A full prop table organized in declaration order. For detailed context, refer to each feature section.</p>
+          <p>A full prop table organized by feature. For detailed context, refer to each feature section.</p>
 
           <h3>Data</h3>
           <ul class="props">
@@ -6010,8 +6094,20 @@ async function exportWorkbook() {
               ><span class="type">CellFormatResolver | CellFormatsMap</span>
             </li>
             <li>
-              <span class="name">CellFormatToolbar</span
-              ><span class="type">{ selection, cellFormats: CellFormatsMap, onCellFormatsChange }</span>
+              <span class="name">onCellFormatsChange</span
+              ><span class="type">(next: CellFormatsMap) =&gt; void</span>
+            </li>
+            <li>
+              <span class="name">borderDrawTool</span
+              ><span class="type">BorderDrawTool | null</span>
+            </li>
+            <li>
+              <span class="name">borderDrawSide</span
+              ><span class="type">CellBorderSide</span>
+            </li>
+            <li>
+              <span class="name">merges</span
+              ><span class="type">ReadonlyArray&lt;SelectionRange&gt;</span>
             </li>
           </ul>
 
@@ -6077,7 +6173,12 @@ async function exportWorkbook() {
 
         <section class="entry anchor-target" id="api-types">
           <h2>API: type definitions</h2>
-          <p>Re-exported from <code>'hyper-xl'</code>. The source is <code>src/types/</code>.</p>
+          <p>
+            Re-exported from <code>'hyper-xl'</code>. Most are defined in <code>src/types/</code>, but
+            some (the selection · editing · contextMenu · sortFilter · protection families) live in
+            their respective <code>src/XlReact/…</code> modules and are re-exported again by
+            <code>src/types/index.ts</code>.
+          </p>
 
           <details class="example" open>
             <summary>
@@ -6094,6 +6195,8 @@ interface Row {
   id: string | number;
   data: Record&lt;string, unknown&gt;;
   height?: number;
+  level?: number;                          // §6.4 row hierarchy depth
+  parentId?: string | number | null;       // §6.4 explicit parent reference
 }
 
 interface CellRendererProps&lt;T&gt; {
@@ -6268,6 +6371,8 @@ interface CellBorder {
   right?: CellBorderSide;
   bottom?: CellBorderSide;
   left?: CellBorderSide;
+  diagonalDown?: CellBorderSide;  // ╲ in-cell diagonal (SVG overlay)
+  diagonalUp?: CellBorderSide;    // ╱ in-cell diagonal
 }
 interface CellFormat {
   font?: CellFont;
@@ -6292,6 +6397,8 @@ interface CellBorderPatch {
   right?: CellBorderSidePatch | null;
   bottom?: CellBorderSidePatch | null;
   left?: CellBorderSidePatch | null;
+  diagonalDown?: CellBorderSidePatch | null;
+  diagonalUp?: CellBorderSidePatch | null;
 }
 type CellFormatPatch = {
   font?: CellFontPatch | null;
@@ -6300,7 +6407,8 @@ type CellFormatPatch = {
   border?: CellBorderPatch | null;
   numberFormat?: string | null;
 };
-type CellBorderPlacement = 'outline' | 'all' | 'top' | 'right' | 'bottom' | 'left' | 'none';
+type CellBorderPlacement = 'outline' | 'all' | 'top' | 'right' | 'bottom' | 'left' | 'none'
+  | 'diagonal-down' | 'diagonal-up';
 type CellFormatPatchResolver = (
   current: CellFormat | undefined,
   coord: CellCoord,
@@ -6312,6 +6420,31 @@ interface CellFormatToolbarProps {
   onCellFormatsChange: (next: CellFormatsMap) =&gt; void;
   disabled?: boolean;
   className?: string;
+  // Font / number-format option overrides
+  fontFamilies?: readonly CellFormatToolbarFontOption[];
+  fontSizes?: readonly number[];
+  numberFormats?: readonly CellFormatToolbarNumberFormatOption[];
+  // Merge integration (absorbs the CellMergeToolbar feature)
+  merges?: ReadonlyArray&lt;SelectionRange&gt;;
+  onMergesChange?: (next: SelectionRange[]) =&gt; void;
+  onMergeClearCovered?: (ranges: SelectionRange[]) =&gt; void;
+  mergeLabels?: CellMergeToolbarLabels;
+  // Border draw tool
+  activeBorderTool?: BorderDrawTool | null;
+  onBorderDrawToolChange?: (tool: BorderDrawTool | null, side: CellBorderSide) =&gt; void;
+  // Conditional formatting integration
+  conditionalRules?: readonly ConditionalRule[];
+  onConditionalRulesChange?: (next: ConditionalRule[]) =&gt; void;
+  columns?: readonly AnyColumn[];
+  conditionalFormatLabels?: Partial&lt;ConditionalFormatToolbarLabels&gt;;
+  // Cell style preset integration
+  cellStyleRegistry?: CellStyleRegistry;
+  cellStyleApplyMode?: CellStyleApplyMode;
+  cellStyleLabels?: Partial&lt;CellStyleToolbarLabels&gt;;
+  // Format Painter
+  formatPainterArmed?: boolean;
+  onFormatPainterToggle?: () =&gt; void;
+  formatPainterLabel?: string;
 }
 
 function cellFormatKey(rowIndex: number, columnIndex: number): string;
@@ -6379,7 +6512,12 @@ interface ProtectedActionInfo {
 
         <section class="entry anchor-target" id="api-utilities">
           <h2>API: utilities</h2>
-          <p>Helpers exported from <code>'hyper-xl'</code>.</p>
+          <p>
+            The <strong>main</strong> utilities (representative items) exported from <code>'hyper-xl'</code>.
+            Beyond this list, the root also exports many helpers and components related to formatting,
+            conditional formatting, cell styles, merging, search, pivot, sheets, printing, and formulas —
+            for the full list, refer to each feature section and <code>src/index.ts</code>.
+          </p>
 
           <ul class="props">
             <li>
@@ -6389,8 +6527,12 @@ interface ProtectedActionInfo {
             </li>
             <li>
               <span class="name">processInChunks</span
-              ><span class="type">(items, options) =&gt; Promise&lt;void&gt;</span>
-              <p class="desc">An async chunked iteration helper used by paste / fill.</p>
+              ><span class="type">(items, perItem, options?) =&gt; Promise&lt;void&gt;</span>
+              <p class="desc">
+                An async chunked iteration helper used by paste / fill. The callback
+                <code>perItem(item, index)</code> is the second argument, and the options are
+                <code>{ chunkSize?, signal? }</code>.
+              </p>
             </li>
             <li>
               <span class="name">BoundedUndoStack</span
@@ -6529,7 +6671,7 @@ interface ProtectedActionInfo {
               <tr><td><a href="#print">Print (Print: preview modal · A4/A3/A5/Letter/Legal/Tabloid paper + landscape/portrait · margins / scale (10~400%) · header·footer 3-zone + <code>&P/&N/&D/&T/&F/&A</code> placeholders · print area · row/column repeat · page break preview overlay · <code>@media print</code> page breaks · pure <code>paginate()</code> engine (reusable for PDF))</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill med">Medium</span></td><td>2026-05-29</td></tr>
               <tr><td><a href="#view-modes">View modes (View Modes: gridlines / header show·hide · 1 / 2 / 4 split panels + scroll synchronization · new window BroadcastChannel synchronization · Fullscreen API)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill med">Medium</span></td><td>2026-05-28</td></tr>
               <tr><td><a href="#sheets">Sheets / tabs (Workbook: multi-sheet model · add / delete / rename / tab color / drag reorder / duplicate · hide · protection (read-only) · per-sheet payload owned by the consumer · multi-sheet .xlsx export bridge · English / Korean label presets)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill high">High</span></td><td>2026-05-28</td></tr>
-              <tr><td><a href="#pivot">Pivot table (Pivot Table: 4-area drag &amp; drop builder · 9 aggregations · 6 value display formats (%) · row/column grouping (date units · numeric ranges) · sort · label filter · axis value filter (Top N / above·below average / threshold) · subtotal position · report format (compact/outline/tabular) · empty cell display value · grand total · bulk refresh of multiple pivots · details (Show Details: extract source rows by double-clicking a value cell) · preset pivots (wiring request total / monthly cumulative / actual vs. plan %) · pivot charts (bar / line / pie) · external · dynamic data source (RowSource adapter: another grid / DB query / automatic recalculation when rows are added) · renders results to an XlReact grid)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill high">High</span></td><td>2026-05-28</td></tr>
+              <tr><td><a href="#pivot">Pivot table (Pivot Table: 4-area drag &amp; drop builder · 9 aggregations · 13 value display formats (P1 % 6 + P2 calculation modes 7) · row/column grouping (date units · numeric ranges) · sort · label filter · axis value filter (Top N / above·below average / threshold) · subtotal position · report format (compact/outline/tabular) · empty cell display value · grand total · bulk refresh of multiple pivots · details (Show Details: extract source rows by double-clicking a value cell) · preset pivots (wiring request total / monthly cumulative / actual vs. plan %) · pivot charts (bar / line / pie) · external · dynamic data source (RowSource adapter: another grid / DB query / automatic recalculation when rows are added) · renders results to an XlReact grid)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill high">High</span></td><td>2026-05-28</td></tr>
               <tr><td><a href="#row-grouping">Row hierarchy (Row Hierarchy / Grouping: multi-level tree + collapse/expand)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill med">Medium</span></td><td>2026-05-27</td></tr>
               <tr><td><a href="#import-export">Import / export (Excel · CSV · TSV: formats · formulas · multiple sheets · column mapping · validation reporting)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill high">High</span></td><td>2026-05-27</td></tr>
               <tr><td><a href="#formula">Formula engine (Formula Engine: arithmetic operations + cell references + <code>$</code> absolute references + relative shifting on auto-fill)</a></td><td><span class="pill feature">Feature</span></td><td><span class="pill med">Medium</span></td><td>2026-05-27</td></tr>

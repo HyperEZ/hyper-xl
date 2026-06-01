@@ -1,7 +1,7 @@
 import * as react_jsx_runtime from 'react/jsx-runtime';
 import { R as Row } from './Row-CO-gLrwi.js';
-import { b as CellCoord, S as SelectionRange, c as CellAlign, d as CellBorderSide, e as CellFill, f as CellFont, C as CellFormat, g as CellFormatsMap, A as AnyColumn, h as SelectionSnapshot, i as CellFormats, j as CellRenderers, k as CellRendererProps, G as GridSnapshot, l as CsvOptions, a as ImportResult, M as MultiSheetEntry, E as ExportOptions, I as ImportOptions } from './types-Bi0L8kwK.js';
-export { m as CellBorder, n as CellBorderLineStyle, o as CellEditCommitNav, p as CellEditor, q as CellEditorProps, r as CellFormatResolver, s as CellHorizontalAlign, t as CellRenderer, u as CellRendererResolver, v as CellRenderersMap, w as CellVerticalAlign, x as Column, y as ColumnValidation, z as ColumnValidationResult, D as DEFAULT_MAX_IMPORT_SIZE_BYTES, B as ExportRange, F as ImportWarning, H as ImportWarningKind, J as cellFormatKey, K as cellRendererKey, L as resolveCellFormat, N as resolveCellRenderer } from './types-Bi0L8kwK.js';
+import { b as CellCoord, S as SelectionRange, c as CellAlign, d as CellBorderSide, e as CellFill, f as CellFont, C as CellFormat, g as CellFormatsMap, A as AnyColumn, h as SelectionSnapshot, i as CellFormats, j as CellRenderers, k as CellRendererProps, G as GridSnapshot, l as CsvOptions, a as ImportResult, M as MultiSheetEntry, E as ExportOptions, I as ImportOptions } from './types-Dnb2TDOE.js';
+export { m as CellBorder, n as CellBorderLineStyle, o as CellEditCommitNav, p as CellEditor, q as CellEditorProps, r as CellFormatResolver, s as CellHorizontalAlign, t as CellRenderer, u as CellRendererResolver, v as CellRenderersMap, w as CellVerticalAlign, x as Column, y as ColumnValidation, z as ColumnValidationResult, D as DEFAULT_MAX_IMPORT_SIZE_BYTES, B as ExportRange, F as ImportWarning, H as ImportWarningKind, J as cellFormatKey, K as cellRendererKey, L as resolveCellFormat, N as resolveCellRenderer } from './types-Dnb2TDOE.js';
 import { ReactElement, ReactNode, CSSProperties, RefObject } from 'react';
 import { P as PivotAggregationKind, a as PivotConfig, b as PivotResult, c as PivotLayoutOptions, d as PivotAvailableField } from './pivot-presets-Cd4PBMr1.js';
 export { D as DEFAULT_PIVOT_LAYOUT, E as EMPTY_PIVOT_CONFIG, e as PIVOT_AGGREGATION_LABELS, f as PIVOT_DATE_UNIT_LABELS, g as PIVOT_REPORT_LAYOUT_LABELS, h as PIVOT_SORT_MODE_LABELS, i as PIVOT_SUBTOTAL_POSITION_LABELS, j as PIVOT_VALUE_DISPLAY_LABELS, k as PivotAreaName, l as PivotDateGroupUnit, m as PivotField, n as PivotFieldGrouping, o as PivotFieldSort, p as PivotFilterField, q as PivotGroupedValue, r as PivotHeaderCell, s as PivotLabelFilter, t as PivotNumberBin, u as PivotPreset, v as PivotReportLayout, w as PivotRowSubtotal, x as PivotSortMode, y as PivotSubtotalPosition, z as PivotValueDisplay, A as PivotValueField, B as PivotValueFilter, C as PivotValueHeaderCell, W as WIRING_PIVOT_PRESETS, F as WIRING_PIVOT_PRESET_BY_ID, G as WIRING_PRESET_FIELDS, H as WiringPivotPreset, I as WiringPivotPresetId, J as WiringShipmentData, K as buildWiringShipmentDataset, L as isPivotGroupedValue } from './pivot-presets-Cd4PBMr1.js';
@@ -2853,10 +2853,14 @@ interface PivotBuilderProps {
      */
     disableShowDetails?: boolean;
     /**
-     * §10A.8 P2 — auto-refresh cadence. When set, the pivot recomputes every
-     * `autoRefreshIntervalMs` milliseconds. When inside a `PivotRefreshScope`
-     * the timer fans out to every sibling pivot via `refreshAll`. Setting `0`
-     * / `null` / omitting disables the timer.
+     * §10A.8 P2 — auto-refresh cadence. When set, this builder recomputes every
+     * `autoRefreshIntervalMs` milliseconds. This is a PER-PIVOT timer: it bumps
+     * only this builder's local nonce and does NOT fan out to sibling pivots in
+     * a `PivotRefreshScope` (that would install N timers at the same cadence and
+     * recompute N times per tick). To drive one shared cadence across every pivot
+     * in a scope, call `usePivotAutoRefresh` once at the scope level instead — it
+     * bumps the scope nonce so all pivots recompute together. Setting `0` / `null`
+     * / omitting disables the timer.
      */
     autoRefreshIntervalMs?: number | null | undefined;
     /**
