@@ -1,0 +1,3937 @@
+/*
+ * xl-react base CSS — CSS variable defaults + library-internal class rules.
+ * Shipped as `dist/index.css` and exposed via `xl-react/styles.css`.
+ * Consumers MUST import this once — the JS entry intentionally does not
+ * side-effect-import any CSS so Next.js (no-global-css-from-node_modules)
+ * and similar bundlers stay happy.
+ * Override tokens in your app or import a theme from `xl-react/themes/*`.
+ */
+:root {
+  --xl-react-bg: #ffffff;
+  --xl-react-text: #1f2328;
+  --xl-react-text-muted: #656d76;
+  --xl-react-border-color: #d0d7de;
+  --xl-react-row-stripe: #f6f8fa;
+  --xl-react-header-bg: #f6f8fa;
+  --xl-react-header-text: #1f2328;
+  --xl-react-header-selected-bg: #e7f0ff;
+  --xl-react-header-active-bg: #cfe2ff;
+  --xl-react-header-active-text: #0d6efd;
+  --xl-react-selection-bg: rgba(13, 110, 253, 0.12);
+  --xl-react-selection-border: #0d6efd;
+  --xl-react-active-border-width: 2px;
+  --xl-react-font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --xl-react-font-size: 14px;
+  --xl-react-row-height: 32px;
+  --xl-react-col-width: 120px;
+  --xl-react-row-header-width: 48px;
+  --xl-react-cell-padding-x: 8px;
+  /* OUT-15 — read-only cell annotation tooltip + indicator. */
+  --xl-react-annotation-indicator-size: 6px;
+  --xl-react-annotation-indicator-color: #d4322f;
+  --xl-react-annotation-tooltip-bg: #1f2328;
+  --xl-react-annotation-tooltip-text: #ffffff;
+  --xl-react-annotation-tooltip-max-width: 320px;
+  --xl-react-annotation-tooltip-max-height: min(50vh, 320px);
+  /* Formula bar (§10) commit / cancel button accents. */
+  --xl-react-formula-bar-commit-color: #1a7f37;
+  --xl-react-formula-bar-cancel-color: #d4322f;
+}
+
+/*
+ * Formula bar (§10). Two-input control: A1 name box on the left, raw value /
+ * formula input on the right. Drops above the grid and shares the same theme
+ * tokens as the other toolbars.
+ */
+.xl-react-formula-bar {
+  box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  height: 30px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: 13px;
+}
+
+.xl-react-formula-bar__name-box {
+  box-sizing: border-box;
+  width: 120px;
+  min-width: 80px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--xl-react-border-color, #d0d7de);
+  background: var(--xl-react-header-bg, #f6f8fa);
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  outline: none;
+}
+
+.xl-react-formula-bar__name-box:focus-visible {
+  outline: 2px solid var(--xl-react-selection-border, #0d6efd);
+  outline-offset: -2px;
+}
+
+.xl-react-formula-bar__fx {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-right: 1px solid var(--xl-react-border-color, #d0d7de);
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text-muted, #656d76);
+  font-style: italic;
+  font-weight: 600;
+  user-select: none;
+}
+
+.xl-react-formula-bar__edit-actions {
+  display: inline-flex;
+  align-items: stretch;
+  border-right: 1px solid var(--xl-react-border-color, #d0d7de);
+}
+
+.xl-react-formula-bar__action {
+  box-sizing: border-box;
+  width: 26px;
+  border: 0;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.xl-react-formula-bar__action + .xl-react-formula-bar__action {
+  border-left: 1px solid var(--xl-react-border-color, #d0d7de);
+}
+
+.xl-react-formula-bar__action:hover {
+  background: var(--xl-react-header-bg, #f6f8fa);
+}
+
+.xl-react-formula-bar__action--commit {
+  color: var(--xl-react-formula-bar-commit-color, #1a7f37);
+}
+
+.xl-react-formula-bar__action--cancel {
+  color: var(--xl-react-formula-bar-cancel-color, #d4322f);
+}
+
+.xl-react-formula-bar__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 8px;
+  border: 0;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+  outline: none;
+}
+
+.xl-react-formula-bar__input:focus-visible {
+  outline: 2px solid var(--xl-react-selection-border, #0d6efd);
+  outline-offset: -2px;
+}
+
+.xl-react-formula-bar[aria-disabled='true'] {
+  opacity: 0.6;
+}
+
+/*
+ * Formatting toolbar. This is a standalone library component
+ * that edits consumer-owned `CellFormatsMap` state; it can sit above or beside
+ * the grid and shares the same theme tokens.
+ */
+/* Cell merge toolbar — Merge / Unmerge / Merge & Center controls. */
+.xl-react-merge-toolbar {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  background: var(--xl-react-header-bg, #f6f8fa);
+  color: var(--xl-react-text, #1f2328);
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: 13px;
+}
+
+.xl-react-merge-toolbar__button {
+  box-sizing: border-box;
+  height: 28px;
+  min-width: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 6px;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+  cursor: pointer;
+}
+
+.xl-react-merge-toolbar__button:hover:not(:disabled) {
+  border-color: var(--xl-react-selection-border, #0d6efd);
+}
+
+.xl-react-merge-toolbar__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Conditional-format toolbar (§7.8): a dropdown button + grouped rule menu. */
+.xl-react-cond-toolbar {
+  position: relative;
+  display: inline-block;
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: 13px;
+}
+
+.xl-react-cond-toolbar__button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 6px;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+  cursor: pointer;
+}
+
+.xl-react-cond-toolbar__button:hover:not(:disabled) {
+  border-color: var(--xl-react-selection-border, #0d6efd);
+}
+
+.xl-react-cond-toolbar__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.xl-react-cond-toolbar__caret {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.xl-react-cond-toolbar__menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 220px;
+  padding: 4px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 8px;
+  background: var(--xl-react-bg, #ffffff);
+  box-shadow: 0 6px 20px rgba(31, 35, 40, 0.16);
+}
+
+.xl-react-cond-toolbar__group-label {
+  padding: 6px 8px 2px;
+  color: var(--xl-react-muted, #6e7781);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.xl-react-cond-toolbar__item {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.xl-react-cond-toolbar__item:hover:not(:disabled) {
+  background: var(--xl-react-header-bg, #f6f8fa);
+}
+
+.xl-react-cond-toolbar__item:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.xl-react-cond-toolbar__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.xl-react-cond-toolbar__field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.xl-react-cond-toolbar__input {
+  width: 110px;
+  height: 26px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 6px;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+}
+
+.xl-react-cond-toolbar__panel-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+/*
+ * Cell-style gallery dropdown (§7.7). Shares the conditional-format toolbar's
+ * button / menu look; adds a swatch gallery whose tiles preview each style.
+ */
+.xl-react-style-toolbar {
+  position: relative;
+  display: inline-block;
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: 13px;
+}
+
+.xl-react-style-toolbar__button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 6px;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+  cursor: pointer;
+}
+
+.xl-react-style-toolbar__button:hover:not(:disabled) {
+  border-color: var(--xl-react-selection-border, #0d6efd);
+}
+
+.xl-react-style-toolbar__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.xl-react-style-toolbar__caret {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.xl-react-style-toolbar__menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  right: 0;
+  width: 280px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 8px;
+  background: var(--xl-react-bg, #ffffff);
+  box-shadow: 0 6px 20px rgba(31, 35, 40, 0.16);
+}
+
+.xl-react-style-toolbar__clear {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 4px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.xl-react-style-toolbar__clear:hover:not(:disabled) {
+  background: var(--xl-react-header-bg, #f6f8fa);
+}
+
+.xl-react-style-toolbar__clear:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.xl-react-style-toolbar__group-label {
+  padding: 6px 4px 2px;
+  color: var(--xl-react-muted, #6e7781);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.xl-react-style-toolbar__gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 2px 0 6px;
+}
+
+.xl-react-style-toolbar__swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding: 0;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 6px;
+  background: var(--xl-react-bg, #ffffff);
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.xl-react-style-toolbar__swatch:hover:not(:disabled) {
+  border-color: var(--xl-react-selection-border, #0d6efd);
+}
+
+.xl-react-style-toolbar__swatch:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.xl-react-style-toolbar__preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  font-size: 14px;
+  color: var(--xl-react-text, #1f2328);
+}
+
+.xl-react-style-toolbar__swatch-label {
+  padding: 2px 4px 4px;
+  color: var(--xl-react-muted, #6e7781);
+  font-size: 11px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*
+ * Merge layer. A flat overlay sized to the body so merged anchor cells
+ * (its absolutely positioned children) survive their anchor row scrolling out
+ * of the window. Pointer events pass through empty areas to the body cells
+ * beneath; the merged cells themselves re-enable them so clicks still select.
+ */
+.xl-react-grid__merge-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.xl-react-grid__merge-layer > .xl-react-grid__cell {
+  pointer-events: auto;
+}
+
+.xl-react-format-toolbar {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  background: var(--xl-react-header-bg, #f6f8fa);
+  color: var(--xl-react-text, #1f2328);
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: 13px;
+}
+
+.xl-react-format-toolbar[aria-disabled='true'] {
+  color: var(--xl-react-text-muted, #656d76);
+}
+
+.xl-react-format-toolbar__group {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding-right: 6px;
+  border-right: 1px solid var(--xl-react-border-color, #d0d7de);
+}
+
+.xl-react-format-toolbar__group:last-child {
+  border-right: 0;
+  padding-right: 0;
+}
+
+.xl-react-format-toolbar__button,
+.xl-react-format-toolbar__select,
+.xl-react-format-toolbar__number {
+  box-sizing: border-box;
+  height: 28px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 6px;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+}
+
+.xl-react-format-toolbar__button {
+  min-width: 30px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+.xl-react-format-toolbar__button--symbol {
+  width: 30px;
+  padding: 0;
+}
+
+.xl-react-format-toolbar__button:hover:not(:disabled),
+.xl-react-format-toolbar__select:hover:not(:disabled),
+.xl-react-format-toolbar__number:hover:not(:disabled) {
+  border-color: var(--xl-react-selection-border, #0d6efd);
+}
+
+.xl-react-format-toolbar__button[data-active='true'] {
+  border-color: var(--xl-react-selection-border, #0d6efd);
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+  color: var(--xl-react-header-active-text, #0d6efd);
+}
+
+.xl-react-format-toolbar__button:disabled,
+.xl-react-format-toolbar__select:disabled,
+.xl-react-format-toolbar__number:disabled,
+.xl-react-format-toolbar__color input:disabled,
+.xl-react-format-toolbar__color-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.xl-react-format-toolbar__select {
+  max-width: 150px;
+  padding: 0 24px 0 8px;
+}
+
+.xl-react-format-toolbar__select--font {
+  width: 138px;
+}
+
+.xl-react-format-toolbar__select--numfmt {
+  width: 116px;
+}
+
+.xl-react-format-toolbar__number {
+  width: 58px;
+  padding: 0 6px;
+}
+
+.xl-react-format-toolbar__underline {
+  text-decoration-line: underline;
+}
+
+.xl-react-format-toolbar__strike {
+  text-decoration-line: line-through;
+}
+
+.xl-react-format-toolbar__color,
+.xl-react-format-toolbar__checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+}
+
+.xl-react-format-toolbar__color {
+  padding: 0 5px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 6px;
+  background: var(--xl-react-bg, #ffffff);
+}
+
+.xl-react-format-toolbar__color input,
+.xl-react-format-toolbar__color-input {
+  box-sizing: border-box;
+  width: 26px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.xl-react-format-toolbar__menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.xl-react-format-toolbar__border-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.xl-react-format-toolbar__border-icon,
+.xl-react-format-toolbar__border-glyph {
+  position: relative;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  border: 1px dotted #333;
+}
+
+.xl-react-format-toolbar__border-icon::before,
+.xl-react-format-toolbar__border-icon::after,
+.xl-react-format-toolbar__border-glyph::before,
+.xl-react-format-toolbar__border-glyph::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  background: #999;
+}
+
+.xl-react-format-toolbar__border-icon::before,
+.xl-react-format-toolbar__border-glyph::before {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-0.5px);
+}
+
+.xl-react-format-toolbar__border-icon::after,
+.xl-react-format-toolbar__border-glyph::after {
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform: translateY(-0.5px);
+}
+
+.xl-react-format-toolbar__border-icon {
+  border: 2px solid #111827;
+}
+
+.xl-react-format-toolbar__border-glyph--bottom {
+  border-bottom: 2px solid #111827;
+}
+
+.xl-react-format-toolbar__border-glyph--top {
+  border-top: 2px solid #111827;
+}
+
+.xl-react-format-toolbar__border-glyph--left {
+  border-left: 2px solid #111827;
+}
+
+.xl-react-format-toolbar__border-glyph--right {
+  border-right: 2px solid #111827;
+}
+
+.xl-react-format-toolbar__border-glyph--none {
+  border-color: #777;
+}
+
+.xl-react-format-toolbar__border-glyph--all,
+.xl-react-format-toolbar__border-glyph--outside {
+  border: 2px solid #111827;
+}
+
+.xl-react-format-toolbar__border-glyph--all::before {
+  width: 2px;
+  background: #111827;
+  transform: translateX(-1px);
+}
+
+.xl-react-format-toolbar__border-glyph--all::after {
+  height: 2px;
+  background: #111827;
+  transform: translateY(-1px);
+}
+
+.xl-react-format-toolbar__border-glyph--thick-box {
+  border: 3px solid #111827;
+}
+
+.xl-react-format-toolbar__border-glyph--bottom-double {
+  border-bottom: 4px double #111827;
+}
+
+.xl-react-format-toolbar__border-glyph--thick-bottom {
+  border-bottom: 4px solid #111827;
+}
+
+.xl-react-format-toolbar__border-glyph--top-bottom {
+  border-top: 2px solid #111827;
+  border-bottom: 2px solid #111827;
+}
+
+.xl-react-format-toolbar__border-glyph--top-thick-bottom {
+  border-top: 2px solid #111827;
+  border-bottom: 4px solid #111827;
+}
+
+.xl-react-format-toolbar__border-glyph--top-double-bottom {
+  border-top: 2px solid #111827;
+  border-bottom: 4px double #111827;
+}
+
+/* `More Borders…` is still an inert placeholder, so it stays dimmed. The
+   draw / erase items below are functional once the consumer wires the
+   border-draw props, so they render at full strength. */
+.xl-react-format-toolbar__border-glyph--more-borders {
+  opacity: 0.55;
+}
+
+/* Diagonal glyphs (╲ / ╱). The gradient axis is perpendicular to the line it
+   paints, so `to top right` draws the top-left→bottom-right line and vice
+   versa. The base center-cross pseudo-elements are hidden for these. */
+.xl-react-format-toolbar__border-glyph--diagonal-down::before,
+.xl-react-format-toolbar__border-glyph--diagonal-down::after,
+.xl-react-format-toolbar__border-glyph--diagonal-up::before,
+.xl-react-format-toolbar__border-glyph--diagonal-up::after {
+  display: none;
+}
+
+.xl-react-format-toolbar__border-glyph--diagonal-down {
+  background-image: linear-gradient(
+    to top right,
+    transparent calc(50% - 1px),
+    #111827 calc(50% - 1px),
+    #111827 calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+}
+
+.xl-react-format-toolbar__border-glyph--diagonal-up {
+  background-image: linear-gradient(
+    to bottom right,
+    transparent calc(50% - 1px),
+    #111827 calc(50% - 1px),
+    #111827 calc(50% + 1px),
+    transparent calc(50% + 1px)
+  );
+}
+
+/* Active pencil tool highlight (menu item + the Borders trigger). */
+.xl-react-format-toolbar__menu-item[data-active='true'] {
+  background: rgba(37, 99, 235, 0.12);
+  font-weight: 600;
+}
+
+.xl-react-format-toolbar__border-trigger[data-tool-active='true'] {
+  box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.6);
+}
+
+/* ── Border-draw pencil overlay (spec §7.4 P2) ───────────────────────────── */
+.xl-react-grid__border-draw-layer {
+  cursor: crosshair;
+}
+
+.xl-react-grid__border-draw-layer--draw,
+.xl-react-grid__border-draw-layer--grid {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M3 17l2-5L14 3l3 3-9 9-5 2z' fill='%23ffffff' stroke='%23111111' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E")
+      3 17,
+    crosshair;
+}
+
+.xl-react-grid__border-draw-layer--erase {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Crect x='3' y='9' width='11' height='6' rx='1' transform='rotate(-45 8 12)' fill='%23ffffff' stroke='%23111111' stroke-width='1.2'/%3E%3C/svg%3E")
+      4 16,
+    crosshair;
+}
+
+.xl-react-grid__border-draw-preview {
+  background: rgba(37, 99, 235, 0.85);
+  border-radius: 1px;
+}
+
+.xl-react-grid__border-draw-preview--erase {
+  background: rgba(220, 38, 38, 0.85);
+}
+
+.xl-react-grid__border-draw-preview--cell {
+  background: transparent;
+  outline: 2px solid rgba(37, 99, 235, 0.85);
+  outline-offset: -1px;
+}
+
+.xl-react-format-toolbar__border-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 310px;
+  max-height: min(70vh, 620px);
+  overflow: auto;
+  padding: 8px 0;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 8px;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  box-shadow:
+    0 12px 28px rgba(15, 23, 42, 0.18),
+    0 2px 6px rgba(15, 23, 42, 0.12);
+}
+
+.xl-react-format-toolbar__menu-heading {
+  padding: 3px 14px 6px;
+  color: var(--xl-react-text-muted, #656d76);
+  font-size: 14px;
+}
+
+.xl-react-format-toolbar__menu-section {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--xl-react-border-color, #d0d7de);
+}
+
+.xl-react-format-toolbar__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 34px;
+  padding: 4px 14px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.xl-react-format-toolbar__menu-item:hover:not(:disabled),
+.xl-react-format-toolbar__menu-item:focus-visible {
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+  outline: none;
+}
+
+.xl-react-format-toolbar__menu-item:disabled {
+  cursor: not-allowed;
+  color: var(--xl-react-text-muted, #656d76);
+  opacity: 0.7;
+}
+
+.xl-react-format-toolbar__menu-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  padding: 4px 14px;
+}
+
+.xl-react-format-toolbar__menu-control input[type='color'] {
+  width: 34px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.xl-react-format-toolbar__menu-control select {
+  height: 28px;
+  min-width: 112px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 6px;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+}
+
+/*
+ * Consumers should set an explicit height on .xl-react-grid (or its parent
+ * via flex/grid layout) so virtualization has a viewport to window into.
+ * The library only ships a min-height fallback to avoid a zero-height
+ * collapse when consumers forget; it does not enforce a fixed pixel height.
+ */
+.xl-react-grid {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 200px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: var(--xl-react-font-size, 14px);
+  overflow: auto;
+  outline: none;
+  /*
+   * Suppress native text selection while the user drags across cells —
+   * Excel-like grids surface their own cell-level selection model and the
+   * browser's text-selection dotted box would conflict with it. Cell
+   * editors re-enable `user-select` on the editing element itself.
+   */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.xl-react-grid:focus-visible {
+  outline: 2px solid var(--xl-react-selection-border, #0d6efd);
+  outline-offset: -2px;
+}
+
+.xl-react-grid--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.xl-react-grid__placeholder {
+  color: var(--xl-react-text-muted, #656d76);
+  font-style: italic;
+  user-select: none;
+}
+
+.xl-react-grid__viewport {
+  box-sizing: border-box;
+}
+
+.xl-react-grid__header {
+  background: var(--xl-react-header-bg, #f6f8fa);
+  color: var(--xl-react-header-text, #1f2328);
+  border-bottom: 1px solid var(--xl-react-border-color, #d0d7de);
+  font-weight: 600;
+  will-change: transform;
+}
+
+.xl-react-grid__header-cell {
+  box-sizing: border-box;
+  padding: 0 var(--xl-react-cell-padding-x, 8px);
+  display: flex;
+  align-items: center;
+  background: var(--xl-react-header-bg, #f6f8fa);
+  border-right: 1px solid var(--xl-react-border-color, #d0d7de);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+  cursor: pointer;
+}
+
+.xl-react-grid__header-cell--selected {
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+  color: var(--xl-react-header-active-text, #0d6efd);
+}
+
+.xl-react-grid__header-cell--active {
+  background: var(--xl-react-header-active-bg, #cfe2ff);
+  color: var(--xl-react-header-active-text, #0d6efd);
+}
+
+.xl-react-grid__corner {
+  box-sizing: border-box;
+  background: var(--xl-react-header-bg, #f6f8fa);
+  border-right: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-bottom: 1px solid var(--xl-react-border-color, #d0d7de);
+  user-select: none;
+  cursor: pointer;
+}
+
+.xl-react-grid__corner::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 60%,
+    var(--xl-react-text-muted, #656d76) 60%,
+    var(--xl-react-text-muted, #656d76) 70%,
+    transparent 70%
+  );
+  opacity: 0.4;
+}
+
+.xl-react-grid__row-gutter {
+  background: var(--xl-react-header-bg, #f6f8fa);
+  border-right: 1px solid var(--xl-react-border-color, #d0d7de);
+  font-weight: 500;
+  color: var(--xl-react-text-muted, #656d76);
+  will-change: transform;
+}
+
+.xl-react-grid__row-header {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--xl-react-header-bg, #f6f8fa);
+  border-bottom: 1px solid var(--xl-react-border-color, #d0d7de);
+  user-select: none;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+
+.xl-react-grid__row-header--selected {
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+  color: var(--xl-react-header-active-text, #0d6efd);
+}
+
+.xl-react-grid__row-header--active {
+  background: var(--xl-react-header-active-bg, #cfe2ff);
+  color: var(--xl-react-header-active-text, #0d6efd);
+  font-weight: 600;
+}
+
+.xl-react-grid__body {
+  will-change: transform;
+}
+
+.xl-react-grid__cell {
+  box-sizing: border-box;
+  padding: 0 var(--xl-react-cell-padding-x, 8px);
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-bottom: 1px solid var(--xl-react-border-color, #d0d7de);
+  background: var(--xl-react-bg, #ffffff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: cell;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/*
+ * Selection overlay layer. Lives inside the body container, paints below the
+ * active cell border but above the cell backgrounds. Pointer events disabled
+ * so the cell mousedown / mouseenter handlers still fire underneath.
+ */
+.xl-react-grid__selection-layer {
+  z-index: 1;
+}
+
+.xl-react-grid__selection-range {
+  background: var(--xl-react-selection-bg, rgba(13, 110, 253, 0.12));
+  border: 1px solid var(--xl-react-selection-border, #0d6efd);
+  box-sizing: border-box;
+}
+
+.xl-react-grid__selection-active {
+  border: var(--xl-react-active-border-width, 2px) solid var(--xl-react-selection-border, #0d6efd);
+  box-sizing: border-box;
+  background: transparent;
+}
+
+/*
+ * Fill-handle nub (OUT-5 §4.1). 7×7 solid square pinned to the bottom-right
+ * corner of the current selection range. The white outer ring keeps it
+ * legible against any cell background. `pointer-events: auto` is set inline
+ * by the overlay because the parent layer disables them globally; the cursor
+ * hint sits on the nub itself.
+ */
+.xl-react-grid__fill-handle {
+  width: 7px;
+  height: 7px;
+  background: var(--xl-react-selection-border, #0d6efd);
+  box-shadow: 0 0 0 1px var(--xl-react-bg, #ffffff);
+  cursor: crosshair;
+  z-index: 2;
+}
+
+/*
+ * Fill-drag preview (OUT-5 §4.1). Dashed outline of the proposed target
+ * range. Painted with `outline` so it always sits flush against the cell
+ * boundary regardless of which side the user is dragging toward.
+ */
+.xl-react-grid__fill-preview {
+  outline: 1px dashed var(--xl-react-selection-border, #0d6efd);
+  outline-offset: -1px;
+  box-sizing: border-box;
+  background: transparent;
+  z-index: 2;
+}
+
+/*
+ * Marching ants — Excel's clipboard source indicator (OUT-4 §3). Painted as a
+ * dashed border above the selection layer so the user can see both their
+ * current selection and the still-armed copy/cut source while they navigate
+ * to the paste target. `background` draws a 1px dashed border via CSS gradients
+ * (instead of a real `border-style: dashed`) so the dash phase can be animated
+ * cheaply with `background-position`; that's the cross-browser way to get
+ * a smooth, moving "marching" effect without JS.
+ */
+.xl-react-grid__marching-ants {
+  --xl-react-ants-color: var(--xl-react-selection-border, #0d6efd);
+  --xl-react-ants-dash: 6px;
+  --xl-react-ants-gap: 4px;
+  box-sizing: border-box;
+  background:
+    linear-gradient(90deg, var(--xl-react-ants-color) 50%, transparent 0) repeat-x 0 0 /
+      calc(var(--xl-react-ants-dash) + var(--xl-react-ants-gap)) 1px,
+    linear-gradient(90deg, var(--xl-react-ants-color) 50%, transparent 0) repeat-x 0 100% /
+      calc(var(--xl-react-ants-dash) + var(--xl-react-ants-gap)) 1px,
+    linear-gradient(0deg, var(--xl-react-ants-color) 50%, transparent 0) repeat-y 0 0 / 1px
+      calc(var(--xl-react-ants-dash) + var(--xl-react-ants-gap)),
+    linear-gradient(0deg, var(--xl-react-ants-color) 50%, transparent 0) repeat-y 100% 0 / 1px
+      calc(var(--xl-react-ants-dash) + var(--xl-react-ants-gap));
+  animation: xl-react-marching-ants 0.6s linear infinite;
+  z-index: 2;
+}
+
+/* Empty rule reserved for the copy-kind variant so consumers can target the
+ * selector specifically (e.g. to recolor via a custom property). */
+.xl-react-grid__marching-ants--copy {
+}
+
+/* Cut state uses the same dashed outline but a muted hue; consumers can
+ * override via the `--xl-react-ants-color` custom property. */
+.xl-react-grid__marching-ants--cut {
+  --xl-react-ants-color: var(--xl-react-text-muted, #656d76);
+}
+
+@keyframes xl-react-marching-ants {
+  to {
+    background-position:
+      calc(var(--xl-react-ants-dash) + var(--xl-react-ants-gap)) 0,
+      calc(-1 * (var(--xl-react-ants-dash) + var(--xl-react-ants-gap))) 100%,
+      0 calc(-1 * (var(--xl-react-ants-dash) + var(--xl-react-ants-gap))),
+      100% calc(var(--xl-react-ants-dash) + var(--xl-react-ants-gap));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xl-react-grid__marching-ants {
+    animation: none;
+  }
+}
+
+/*
+ * Invalid cell visual cue. Driven by `column.required` (cell value is empty)
+ * or by `column.validate` returning false / a non-empty string. Mirrors
+ * Excel's "Number stored as text" indicator: a small colored triangle in the
+ * top-left corner of the cell — never repainting the cell background, never
+ * blocking edit or commit. Consumers can recolor or hide the marker via the
+ * `--xl-react-invalid-marker` custom property (set to `transparent` to opt
+ * out entirely).
+ */
+.xl-react-grid__cell--invalid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  background: var(--xl-react-invalid-marker, #dc3545);
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  pointer-events: none;
+}
+
+/*
+ * Protected / read-only cell (OUT-18). Subtle striped background hint so the
+ * user can tell at a glance which cells reject edits, without painting a
+ * heavy lock icon that would clutter dense grids. Consumers can recolor or
+ * disable the stripe via the `--xl-react-readonly-stripe` custom property
+ * (set to `transparent` to hide). The cursor switches to `not-allowed` so
+ * hover discoverability is consistent with HTML's `aria-readonly` semantics.
+ */
+.xl-react-grid__cell--readonly {
+  cursor: not-allowed;
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 6px,
+    var(--xl-react-readonly-stripe, rgba(15, 23, 42, 0.05)) 6px,
+    var(--xl-react-readonly-stripe, rgba(15, 23, 42, 0.05)) 7px
+  );
+}
+
+/* Editing wins over the readonly hint (and we should never reach this state
+ * since edit entry is gated, but keep the visuals consistent if a consumer
+ * toggles protection on mid-edit). */
+.xl-react-grid__cell--editing.xl-react-grid__cell--readonly {
+  background-image: none;
+}
+
+/*
+ * Inline cell editor. Sits at z-index above the selection overlay so the user
+ * always sees their draft. `user-select` is re-enabled here because the grid
+ * root suppresses it globally for cell drag-select; the editor is the one
+ * place we *want* native text selection back.
+ */
+/*
+ * Positioning shell wrapping the editor textarea and its AutoComplete (§2.3)
+ * ghost-text overlay. The shell carries the absolute coordinates set by
+ * VirtualGrid; the textarea and overlay both fill it via `inset: 0`.
+ */
+.xl-react-grid__editor-shell {
+  z-index: 5;
+}
+
+.xl-react-grid__editor {
+  position: absolute;
+  z-index: 5;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 var(--xl-react-cell-padding-x, 8px);
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+  border: var(--xl-react-active-border-width, 2px) solid var(--xl-react-selection-border, #0d6efd);
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+  /*
+   * The editor is a <textarea> so Alt+Enter can insert cell-internal
+   * newlines (§2.1). The properties below restore the single-line look:
+   * `pre` keeps long text on one line until a real `\n` arrives, `resize:
+   * none` suppresses the corner grip, and `overflow: auto` lets the cell
+   * scroll its contents instead of growing the rect when a multi-line draft
+   * exceeds the cell height.
+   */
+  white-space: pre;
+  resize: none;
+  overflow: auto;
+  line-height: inherit;
+}
+
+/*
+ * AutoComplete ghost-text overlay. Mounted over the textarea with the same
+ * padding and font, but `pointer-events: none` so clicks pass through. The
+ * leading transparent span reserves the width of the current draft so the
+ * suffix lines up exactly with the caret.
+ */
+.xl-react-grid__editor-ghost {
+  z-index: 6;
+  box-sizing: border-box;
+  padding: 0 var(--xl-react-cell-padding-x, 8px);
+  border: var(--xl-react-active-border-width, 2px) solid transparent;
+  line-height: inherit;
+}
+
+/*
+ * Positioning shell for a column-level custom editor. The grid sizes
+ * and places this box over the edited cell rectangle; the consumer's editor
+ * fills it. Shares the built-in editor's stacking level so it sits above the
+ * surrounding cells. The editor's own look is entirely the consumer's.
+ *
+ * `user-select` is re-enabled (the grid root sets it to `none` for cell
+ * drag-select): without this, ancestors' `user-select: none` makes Chrome
+ * refuse to drag native controls like `<input type="range">` inside the editor.
+ */
+.xl-react-grid__custom-editor {
+  position: absolute;
+  z-index: 5;
+  box-sizing: border-box;
+  user-select: auto;
+  -webkit-user-select: auto;
+}
+
+/*
+ * The underlying cell stays mounted while editing (we need its measurements
+ * for the editor overlay) but we blank out its text so the user doesn't see
+ * the original value bleeding through behind the editor input.
+ */
+.xl-react-grid__cell--editing {
+  background: var(--xl-react-bg, #ffffff);
+  color: transparent;
+}
+
+/*
+ * Per-cell visual format is applied as INLINE style by the
+ * Cell component from the resolved `cellFormats` value — font (family / size /
+ * weight / style / decoration / color), alignment (justify-content / align-
+ * items / white-space / padding-inline-start), fill (background-color), and
+ * per-side borders. Inline style intentionally wins over ordinary cell class
+ * rules; editing cells suppress the format inline style in React so the editor
+ * blanking state stays visible. There is no format-specific class; the contract
+ * lives in `format/cellFormatStyle.ts`.
+ * Note: `text-overflow: ellipsis` only applies to non-wrapped cells — a cell
+ * with `align.wrap` switches to `white-space: normal` and clips by row height
+ * (the grid does not auto-expand height for wrapped text; set `Row.height`).
+ */
+
+/*
+ * Column / row resize handles (OUT-7 §6.1). Hit area is 6px wide / tall and
+ * sits flush against the cell border. Pointer events isolated so the handle
+ * drag never bubbles up as a header selection. Becomes visible on hover.
+ */
+.xl-react-grid__col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 1;
+}
+
+.xl-react-grid__col-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 25%;
+  left: 50%;
+  width: 0;
+  height: 50%;
+  border-right: 1px solid transparent;
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition: border-color 0.1s;
+}
+
+.xl-react-grid__col-resize-handle:hover::after,
+.xl-react-grid__col-resize-handle:active::after {
+  border-right-color: var(--xl-react-selection-border, #0d6efd);
+}
+
+.xl-react-grid__row-resize-handle {
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  height: 6px;
+  width: 100%;
+  cursor: row-resize;
+  user-select: none;
+  z-index: 1;
+}
+
+.xl-react-grid__row-resize-handle::after {
+  content: '';
+  position: absolute;
+  left: 25%;
+  top: 50%;
+  height: 0;
+  width: 50%;
+  border-bottom: 1px solid transparent;
+  transform: translateY(-50%);
+  pointer-events: none;
+  transition: border-color 0.1s;
+}
+
+.xl-react-grid__row-resize-handle:hover::after,
+.xl-react-grid__row-resize-handle:active::after {
+  border-bottom-color: var(--xl-react-selection-border, #0d6efd);
+}
+
+/*
+ * Resize guide line painted across the body during an active drag. Pure
+ * visual cue; cells do not reflow until mouseup commits the new size.
+ */
+.xl-react-grid__resize-guide {
+  pointer-events: none;
+  z-index: 7;
+}
+
+.xl-react-grid__resize-guide--col {
+  width: 1px;
+  background: var(--xl-react-selection-border, #0d6efd);
+}
+
+.xl-react-grid__resize-guide--row {
+  height: 1px;
+  background: var(--xl-react-selection-border, #0d6efd);
+}
+
+/*
+ * Reorder drop indicator (OUT-7 §6.3 P1). Slightly thicker + slightly
+ * brighter than the resize guide so users can tell at a glance which
+ * gesture they're in. Pointer-events none so it never intercepts the
+ * pending mouseup that commits the reorder.
+ */
+.xl-react-grid__reorder-guide {
+  pointer-events: none;
+  z-index: 7;
+}
+.xl-react-grid__reorder-guide--col {
+  width: 2px;
+  background: var(--xl-react-header-active-text, #0d6efd);
+  box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.25);
+}
+.xl-react-grid__reorder-guide--row {
+  height: 2px;
+  background: var(--xl-react-header-active-text, #0d6efd);
+  box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.25);
+}
+
+/* Shift+drag range move drop preview (OUT-7 §6.3 P2). Dashed outline at
+   the proposed destination so the user can confirm before releasing. */
+.xl-react-grid__move-guide {
+  border: 2px dashed var(--xl-react-header-active-text, #0d6efd);
+  background: rgba(13, 110, 253, 0.05);
+  pointer-events: none;
+  z-index: 7;
+  box-sizing: border-box;
+}
+
+/* Freeze divider drag handle (OUT-7 §6.5 P2). Transparent by default so
+   the underlying frozen-pane border carries the visual line; on hover /
+   active it brightens to advertise that it's draggable. */
+.xl-react-grid__freeze-divider {
+  background: transparent;
+}
+.xl-react-grid__freeze-divider:hover,
+.xl-react-grid__freeze-divider:active {
+  background: var(--xl-react-header-active-text, #0d6efd);
+  opacity: 0.4;
+}
+.xl-react-grid__freeze-divider-guide {
+  background: var(--xl-react-header-active-text, #0d6efd);
+  box-shadow: 0 0 0 1px rgba(13, 110, 253, 0.25);
+}
+
+/*
+ * Frozen-pane layers (OUT-7 §6.5). Positioned manually using the grid's
+ * tracked scrollTop / scrollLeft so they remain visible while the body
+ * scrolls past. The corner sits above both axis layers; both axis layers
+ * sit above the body; the column header lane still wins above everything.
+ */
+.xl-react-grid__frozen-row,
+.xl-react-grid__frozen-col,
+.xl-react-grid__frozen-corner {
+  background: var(--xl-react-bg, #ffffff);
+  box-sizing: border-box;
+}
+
+.xl-react-grid__frozen-row {
+  border-bottom: 1px solid var(--xl-react-border-color, #d0d7de);
+}
+
+.xl-react-grid__frozen-col {
+  border-right: 1px solid var(--xl-react-border-color, #d0d7de);
+}
+
+.xl-react-grid__frozen-corner {
+  border-bottom: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-right: 1px solid var(--xl-react-border-color, #d0d7de);
+}
+
+.xl-react-grid__row--frozen {
+  background: var(--xl-react-bg, #ffffff);
+}
+
+/*
+ * Right-click context menu (OUT-7 §6.2 + §6.3). `position: fixed` is set
+ * inline by the component so the menu's coords stay in viewport pixels
+ * regardless of grid scroll. Items are flat <li> with role="menuitem" —
+ * one of the rare valid uses where the list is the interactive widget,
+ * not a passive listing, so we drop list-style and bullet padding.
+ */
+.xl-react-grid__context-menu {
+  z-index: 10;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  min-width: 180px;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: var(--xl-react-font-size, 14px);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.xl-react-grid__context-menu > li {
+  padding: 6px 14px;
+  cursor: pointer;
+  outline: none;
+}
+
+.xl-react-grid__context-menu > li:hover,
+.xl-react-grid__context-menu > li:focus {
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+  color: var(--xl-react-header-active-text, #0d6efd);
+}
+
+/* Inline resize editor (OUT-7 §6.1 P1 right-click → width/height input).
+ * The outer <ul> stays so the existing context-menu dismissal listeners
+ * (outside-click / Escape) keep working; we override hover styling
+ * because the contents are a form, not a menu item. */
+.xl-react-grid__context-menu--resize {
+  min-width: 220px;
+}
+.xl-react-grid__context-menu--resize > li {
+  padding: 10px 14px;
+  cursor: auto;
+}
+.xl-react-grid__context-menu--resize > li:hover,
+.xl-react-grid__context-menu--resize > li:focus {
+  background: transparent;
+  color: inherit;
+}
+.xl-react-grid__context-menu--resize form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.xl-react-grid__context-menu--resize label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--xl-react-font-size, 14px);
+  color: var(--xl-react-text, #1f2328);
+}
+.xl-react-grid__context-menu--resize input {
+  font: inherit;
+  padding: 4px 6px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 3px;
+}
+.xl-react-grid__context-menu__buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.xl-react-grid__context-menu__buttons button {
+  font: inherit;
+  padding: 4px 10px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 3px;
+  background: var(--xl-react-bg, #ffffff);
+  cursor: pointer;
+}
+.xl-react-grid__context-menu__buttons button[type='submit'] {
+  background: var(--xl-react-header-active-text, #0d6efd);
+  color: #ffffff;
+  border-color: var(--xl-react-header-active-text, #0d6efd);
+}
+
+/* OUT-13 §16 — separators, submenus, go-to-cell dialog. */
+.xl-react-grid__context-menu__separator {
+  height: 1px;
+  background: var(--xl-react-border-color, #d0d7de);
+  margin: 4px 0;
+  padding: 0;
+  cursor: default;
+  pointer-events: none;
+}
+.xl-react-grid__context-menu__separator:hover,
+.xl-react-grid__context-menu__separator:focus {
+  background: var(--xl-react-border-color, #d0d7de);
+  color: inherit;
+}
+.xl-react-grid__context-menu__submenu-parent {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.xl-react-grid__context-menu__submenu-arrow {
+  font-size: 0.85em;
+  opacity: 0.6;
+}
+.xl-react-grid__context-menu__submenu {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  margin: 0;
+  z-index: 11;
+}
+.xl-react-grid__goto-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 12;
+}
+.xl-react-grid__goto-dialog {
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 240px;
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: var(--xl-react-font-size, 14px);
+}
+.xl-react-grid__goto-dialog__label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.xl-react-grid__goto-dialog__label input {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 3px;
+}
+.xl-react-grid__goto-dialog__error {
+  margin: 0;
+  color: #b00020;
+}
+.xl-react-grid__goto-dialog__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.xl-react-grid__goto-dialog__buttons button {
+  font: inherit;
+  padding: 6px 12px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 3px;
+  background: var(--xl-react-bg, #ffffff);
+  cursor: pointer;
+}
+.xl-react-grid__goto-dialog__buttons button[type='submit'] {
+  background: var(--xl-react-header-active-text, #0d6efd);
+  color: #ffffff;
+  border-color: var(--xl-react-header-active-text, #0d6efd);
+}
+
+/* ── §9 — Find & Replace dialog ────────────────────────────────────────── */
+
+.xl-react-grid__find-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 8vh;
+  z-index: 12;
+}
+.xl-react-grid__find-dialog {
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: var(--xl-react-font-size, 14px);
+}
+.xl-react-grid__find-dialog__tabs {
+  display: flex;
+  gap: 4px;
+}
+.xl-react-grid__find-dialog__tabs button {
+  font: inherit;
+  padding: 4px 12px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 3px;
+  background: var(--xl-react-bg, #ffffff);
+  cursor: pointer;
+}
+.xl-react-grid__find-dialog__tabs button[data-active='true'] {
+  background: var(--xl-react-header-active-text, #0d6efd);
+  color: #ffffff;
+  border-color: var(--xl-react-header-active-text, #0d6efd);
+}
+.xl-react-grid__find-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.xl-react-grid__find-dialog__field input {
+  font: inherit;
+  padding: 6px 8px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 3px;
+}
+.xl-react-grid__find-dialog__field input[aria-invalid='true'] {
+  border-color: #b00020;
+}
+.xl-react-grid__find-dialog__options,
+.xl-react-grid__find-dialog__scope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font-size: 0.92em;
+}
+.xl-react-grid__find-dialog__options label,
+.xl-react-grid__find-dialog__scope label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.xl-react-grid__find-dialog__status {
+  margin: 0;
+  min-height: 1.2em;
+  color: var(--xl-react-muted, #65748b);
+}
+.xl-react-grid__find-dialog__status[data-error='true'] {
+  color: #b00020;
+}
+.xl-react-grid__find-dialog__notice {
+  margin: 0;
+  color: #9a3412;
+  font-size: 0.92em;
+}
+.xl-react-grid__find-dialog__results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 168px;
+  overflow-y: auto;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 3px;
+}
+.xl-react-grid__find-dialog__results button {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 8px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.xl-react-grid__find-dialog__results button:hover {
+  background: var(--xl-react-selection-bg, rgba(13, 110, 253, 0.08));
+}
+.xl-react-grid__find-dialog__results button[data-active='true'] {
+  background: var(--xl-react-selection-bg, rgba(13, 110, 253, 0.16));
+}
+.xl-react-grid__find-dialog__results-addr {
+  flex: 0 0 auto;
+  min-width: 42px;
+  font-variant-numeric: tabular-nums;
+  color: var(--xl-react-muted, #65748b);
+}
+.xl-react-grid__find-dialog__results-value {
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.xl-react-grid__find-dialog__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.xl-react-grid__find-dialog__buttons button {
+  font: inherit;
+  padding: 6px 12px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 3px;
+  background: var(--xl-react-bg, #ffffff);
+  cursor: pointer;
+}
+.xl-react-grid__find-dialog__buttons button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── OUT-9 §8 — sort + filter affordances on column headers ─────────────── */
+
+.xl-react-grid__header-cell-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xl-react-grid__header-sort,
+.xl-react-grid__header-filter {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--xl-react-header-text, #1f2328);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.xl-react-grid__header-sort:hover,
+.xl-react-grid__header-filter:hover {
+  background: rgba(13, 110, 253, 0.12);
+  opacity: 1;
+}
+.xl-react-grid__header-sort--asc,
+.xl-react-grid__header-sort--desc {
+  opacity: 1;
+  color: var(--xl-react-header-active-text, #0d6efd);
+}
+.xl-react-grid__header-sort-badge {
+  position: absolute;
+  margin-left: 14px;
+  margin-top: -10px;
+  font-size: 9px;
+  font-weight: 700;
+  background: var(--xl-react-header-active-text, #0d6efd);
+  color: #ffffff;
+  border-radius: 7px;
+  padding: 0 4px;
+  line-height: 12px;
+  min-width: 12px;
+  text-align: center;
+}
+.xl-react-grid__header-filter--active {
+  opacity: 1;
+  color: var(--xl-react-header-active-text, #0d6efd);
+}
+.xl-react-grid__header-filter--open {
+  background: rgba(13, 110, 253, 0.18);
+}
+
+.xl-react-grid__filter-panel {
+  min-width: 200px;
+  max-width: 280px;
+  background: var(--xl-react-bg, #ffffff);
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 4px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+  font-size: 13px;
+  color: var(--xl-react-header-text, #1f2328);
+}
+.xl-react-grid__filter-panel-header {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--xl-react-border-color, #d0d7de);
+}
+.xl-react-grid__filter-panel-list {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.xl-react-grid__filter-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.xl-react-grid__filter-panel-row:hover {
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+}
+.xl-react-grid__filter-panel-row--all {
+  font-weight: 600;
+}
+.xl-react-grid__filter-panel-row input[type='checkbox'] {
+  flex: 0 0 auto;
+}
+.xl-react-grid__filter-panel-row > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.xl-react-grid__filter-panel-empty {
+  padding: 8px;
+  color: #57606a;
+  text-align: center;
+}
+.xl-react-grid__filter-panel-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--xl-react-border-color, #d0d7de);
+}
+.xl-react-grid__filter-panel-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 3px;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-header-text, #1f2328);
+  cursor: pointer;
+  font-size: 12px;
+}
+.xl-react-grid__filter-panel-btn--primary {
+  background: var(--xl-react-header-active-text, #0d6efd);
+  border-color: var(--xl-react-header-active-text, #0d6efd);
+  color: #ffffff;
+}
+
+/* ── OUT-14 — sheet zoom (10% ─ 400%) ───────────────────────────────────── */
+
+/*
+ * The wrapper hosts the role=grid div plus the absolutely-positioned status
+ * bar. `width: 100%; height: 100%` keeps the same layout footprint as the
+ * pre-OUT-14 grid: when the consumer sized `.xl-react-grid` via its own
+ * CSS (with `height: 100%` against a sized parent), that height now
+ * resolves through the wrapper. `min-height: 200px` mirrors the grid's
+ * own fallback so a consumer who forgot to size the container still gets
+ * a visible viewport (and a working virtualization window).
+ */
+.xl-react-grid-wrapper {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+}
+
+/*
+ * Status-bar zoom widget pinned to the wrapper's bottom-right corner. Floats
+ * above the grid scrollbars at a safe inset so it never sits on top of the
+ * native scrollbar gutter. Buttons + slider stop their own pointerdown so
+ * clicking them doesn't steal grid focus or trigger a selection-clear.
+ */
+.xl-react-grid__zoom-control {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--xl-react-bg, #ffffff);
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: 12px;
+  color: var(--xl-react-text, #1f2328);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.xl-react-grid__zoom-button {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.xl-react-grid__zoom-button:hover:not(:disabled) {
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+  border-color: var(--xl-react-border-color, #d0d7de);
+}
+.xl-react-grid__zoom-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.xl-react-grid__zoom-slider {
+  flex: 0 0 auto;
+  width: 96px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--xl-react-selection-border, #0d6efd);
+}
+
+.xl-react-grid__zoom-percent {
+  flex: 0 0 auto;
+  min-width: 44px;
+  padding: 2px 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  cursor: pointer;
+}
+.xl-react-grid__zoom-percent:hover {
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+  border-color: var(--xl-react-border-color, #d0d7de);
+}
+
+/*
+ * OUT-19 §10 — selection aggregate status bar (SUM / AVG / COUNT).
+ *
+ * Mirrors the zoom widget's pill styling so the two read as a coherent
+ * Excel-style status bar across the bottom edge. Pinned to the wrapper's
+ * bottom-left so it never collides with the zoom widget on the right;
+ * `max-width: calc(100% - 220px)` reserves enough room for the zoom
+ * control even on tight grids and lets the stats truncate gracefully if
+ * the numbers grow wide.
+ */
+.xl-react-grid__selection-stats {
+  position: absolute;
+  left: 16px;
+  bottom: 12px;
+  z-index: 9;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  /* Default: zoom widget hidden, stats may use the full lane minus a small
+   * gutter. The zoom-visible case is overridden below via the wrapper's
+   * `data-show-zoom-control` attribute to reserve enough room for the
+   * right-side widget (~204px wide + 16px right inset). */
+  max-width: calc(100% - 32px);
+  overflow: hidden;
+  background: var(--xl-react-bg, #ffffff);
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: 12px;
+  color: var(--xl-react-text, #1f2328);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.xl-react-grid__selection-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+}
+.xl-react-grid__selection-stat + .xl-react-grid__selection-stat {
+  padding-left: 8px;
+  border-left: 1px solid var(--xl-react-border-color, #d0d7de);
+}
+.xl-react-grid__selection-stat dt {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--xl-react-muted-text, #57606a);
+}
+.xl-react-grid__selection-stat dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Zoom widget visible — reserve its footprint so the stats pill can't
+ * overlap the bottom-right control on narrow viewports. The 240px cap
+ * covers the widget's max width (slider 96px + buttons + percentage label
+ * + paddings) plus the 16px right gutter. */
+.xl-react-grid-wrapper[data-show-zoom-control='true'] .xl-react-grid__selection-stats {
+  max-width: calc(100% - 240px);
+}
+
+/*
+ * OUT-15 — read-only cell annotation indicator + tooltip.
+ *
+ * The indicator is a small filled triangle pinned to the cell's top-right
+ * corner (Excel-style "comment marker"). Pointer events are off so it
+ * doesn't intercept selection clicks; the tooltip lives at the grid root
+ * via delegated hover.
+ *
+ * The tooltip is a `role="tooltip"` floating panel positioned via inline
+ * `position: fixed`. CSS only controls appearance + max-width + word
+ * wrapping — geometry comes from the layout effect in
+ * `CellAnnotationTooltip.tsx`.
+ */
+.xl-react-grid__cell-annotation-indicator {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--xl-react-annotation-indicator-size, 6px);
+  height: var(--xl-react-annotation-indicator-size, 6px);
+  background: var(--xl-react-annotation-indicator-color, #d4322f);
+  clip-path: polygon(100% 0, 100% 100%, 0 0);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.xl-react-grid__annotation-tooltip {
+  max-width: var(--xl-react-annotation-tooltip-max-width, 320px);
+  /* Cap the height so multi-paragraph annotation strings stay anchored to
+   * the cell instead of growing past the viewport; the panel scrolls
+   * internally once the content overflows. */
+  max-height: var(--xl-react-annotation-tooltip-max-height, min(50vh, 320px));
+  padding: 6px 10px;
+  background: var(--xl-react-annotation-tooltip-bg, #1f2328);
+  color: var(--xl-react-annotation-tooltip-text, #ffffff);
+  border-radius: 4px;
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: calc(var(--xl-react-font-size, 14px) - 1px);
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(31, 35, 40, 0.18);
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Empty placeholder rule reserved for the flipped variant so consumers can
+ * target the tooltip when it has flipped above its anchor (e.g. to invert a
+ * directional shadow). The library has no default visual difference between
+ * the two orientations. */
+.xl-react-grid__annotation-tooltip--flipped {
+}
+
+/* ── Data validation list / dropdown (§2.3) ──────────────────────────────── */
+
+/* ▼ caret on the active list cell. Reserve a little right-edge room on the
+ * cell content via padding so values don't slide under the caret. */
+.xl-react-grid__cell--validation-list.xl-react-grid__cell--active {
+  padding-right: 18px;
+}
+.xl-react-grid__cell-validation-caret {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--xl-react-text-muted, #656d76);
+  background: var(--xl-react-header-bg, #f6f8fa);
+  border-left: 1px solid var(--xl-react-border-color, #d0d7de);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  z-index: 2;
+}
+.xl-react-grid__cell-validation-caret:hover {
+  color: var(--xl-react-header-active-text, #0d6efd);
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+}
+
+/* ── Row hierarchy / grouping (§6.4) ─────────────────────────────────────────
+ *
+ * Indent + +/- disclosure widget rendered in the first data column when the
+ * grid is wired with `rowOutline`. Both pieces are inline flex children that
+ * sit before the cell content; the indent reserves `level * indentPx`, the
+ * disclosure reserves a fixed-width slot so leaves and parents at the same
+ * depth align visually.
+ */
+.xl-react-grid__cell-outline-indent {
+  display: inline-block;
+  align-self: stretch;
+  flex: 0 0 auto;
+}
+.xl-react-grid__cell-outline-disclosure {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin-right: 4px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--xl-react-text-muted, #656d76);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.xl-react-grid__cell-outline-disclosure:hover {
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+  color: var(--xl-react-header-active-text, #0d6efd);
+  border-color: var(--xl-react-border-color, #d0d7de);
+}
+.xl-react-grid__cell-outline-disclosure:focus-visible {
+  outline: 2px solid var(--xl-react-selection-border, #0d6efd);
+  outline-offset: 1px;
+}
+.xl-react-grid__cell-outline-disclosure--empty {
+  cursor: default;
+  pointer-events: none;
+  background: transparent;
+  border-color: transparent;
+}
+
+.xl-react-grid__validation-dropdown {
+  max-width: 320px;
+  background: var(--xl-react-bg, #ffffff);
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 4px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: 13px;
+  color: var(--xl-react-text, #1f2328);
+  overflow: hidden;
+}
+.xl-react-grid__validation-search-wrap {
+  padding: 6px;
+  border-bottom: 1px solid var(--xl-react-border-color, #d0d7de);
+}
+.xl-react-grid__validation-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 3px;
+  font: inherit;
+  color: inherit;
+  background: var(--xl-react-bg, #ffffff);
+  outline: none;
+}
+.xl-react-grid__validation-search:focus {
+  border-color: var(--xl-react-selection-border, #0d6efd);
+}
+.xl-react-grid__validation-list {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.xl-react-grid__validation-option {
+  display: flex;
+  align-items: center;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.xl-react-grid__validation-option--highlighted {
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+}
+.xl-react-grid__validation-option--current {
+  font-weight: 600;
+}
+.xl-react-grid__validation-option--current::after {
+  content: '✓';
+  margin-left: auto;
+  padding-left: 8px;
+  color: var(--xl-react-header-active-text, #0d6efd);
+}
+.xl-react-grid__validation-empty {
+  padding: 8px 10px;
+  color: var(--xl-react-text-muted, #656d76);
+  text-align: center;
+}
+
+/* §11 — Import / Export ───────────────────────────────────────────────── */
+
+.xl-export-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff;
+  background: #2563eb;
+  border: 1px solid #1d4ed8;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.xl-export-button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+.xl-export-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.xl-import-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+}
+.xl-import-dialog {
+  background: #ffffff;
+  border-radius: 8px;
+  width: min(720px, 92vw);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3);
+}
+.xl-import-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.xl-import-dialog__header h2 {
+  font-size: 15px;
+  margin: 0;
+}
+.xl-import-dialog__close {
+  background: none;
+  border: 0;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6b7280;
+}
+.xl-import-dialog__body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+.xl-import-dialog__drop {
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 40px 16px;
+  text-align: center;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.xl-import-dialog__drop.is-dragging,
+.xl-import-dialog__drop:hover {
+  background: #f1f5f9;
+  border-color: #2563eb;
+}
+.xl-import-dialog__pick {
+  margin-top: 8px;
+  padding: 6px 14px;
+  background: #2563eb;
+  color: #ffffff;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.xl-import-dialog__error {
+  margin-top: 12px;
+  color: #b91c1c;
+}
+.xl-import-dialog__row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.xl-import-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #374151;
+}
+.xl-import-dialog__field select,
+.xl-import-dialog__field input {
+  padding: 4px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font: inherit;
+  background: #ffffff;
+  min-width: 120px;
+}
+.xl-import-dialog__hint {
+  font-size: 12px;
+  color: #6b7280;
+}
+.xl-import-dialog__preview h3,
+.xl-import-dialog__mapping h3 {
+  font-size: 13px;
+  margin: 8px 0;
+}
+.xl-import-dialog__mapping {
+  margin-top: 8px;
+}
+.xl-import-dialog__mapping input[type='text'] {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font: inherit;
+}
+.xl-import-dialog__mapping em {
+  color: #9ca3af;
+  font-style: italic;
+}
+.xl-import-dialog__table-wrap {
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  overflow: auto;
+  max-height: 280px;
+}
+.xl-import-dialog__table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.xl-import-dialog__table-wrap th,
+.xl-import-dialog__table-wrap td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  white-space: nowrap;
+}
+.xl-import-dialog__table-wrap th {
+  background: #f8fafc;
+  font-weight: 600;
+}
+.xl-import-dialog__warnings {
+  margin-top: 12px;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.xl-import-dialog__warnings h4 {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  color: #92400e;
+}
+.xl-import-dialog__warnings ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #78350f;
+}
+.xl-import-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #e5e7eb;
+}
+.xl-import-dialog__footer button {
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  cursor: pointer;
+  font: inherit;
+}
+.xl-import-dialog__footer button.primary {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #1d4ed8;
+}
+.xl-import-dialog__footer button.primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Sheet / tab bar (§14). All visual properties resolved through
+ * --xl-react-* tokens so the same chrome themes apply (consumers can still
+ * override individual hooks without forking the stylesheet). */
+.xl-react-sheet-tabbar {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 6px;
+  background: var(--xl-react-header-bg, #f6f8fa);
+  border-top: 1px solid var(--xl-react-border-color, #d0d7de);
+  color: var(--xl-react-text, #1f2328);
+  font-family: var(--xl-react-font, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif);
+  font-size: 13px;
+  position: relative;
+  user-select: none;
+}
+
+.xl-react-sheet-tabbar__controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.xl-react-sheet-tabbar__add,
+.xl-react-sheet-tabbar__hidden-toggle {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 4px;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+  cursor: pointer;
+}
+
+.xl-react-sheet-tabbar__add:hover,
+.xl-react-sheet-tabbar__hidden-toggle:hover {
+  border-color: var(--xl-react-selection-border, #0d6efd);
+}
+
+.xl-react-sheet-tabbar__hidden-wrap {
+  position: relative;
+}
+
+.xl-react-sheet-tabbar__list {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-width: 0;
+  scrollbar-width: thin;
+}
+
+.xl-react-sheet-tabbar__tab {
+  box-sizing: border-box;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-bottom: none;
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  cursor: pointer;
+  font: inherit;
+  max-width: 200px;
+  min-width: 60px;
+}
+
+.xl-react-sheet-tabbar__tab:hover {
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+}
+
+.xl-react-sheet-tabbar__tab--active {
+  background: var(--xl-react-bg, #ffffff);
+  border-color: var(--xl-react-selection-border, #0d6efd);
+  color: var(--xl-react-header-active-text, #0d6efd);
+  font-weight: 600;
+  box-shadow: 0 -2px 0 0 var(--xl-react-selection-border, #0d6efd) inset;
+}
+
+.xl-react-sheet-tabbar__tab[style*='--xl-react-sheet-tab-color']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--xl-react-sheet-tab-color);
+}
+
+.xl-react-sheet-tabbar__tab--active[style*='--xl-react-sheet-tab-color']::before {
+  height: 4px;
+}
+
+.xl-react-sheet-tabbar__tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1 1 auto;
+  text-align: center;
+}
+
+.xl-react-sheet-tabbar__protected-badge {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.xl-react-sheet-tabbar__rename-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 80px;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid var(--xl-react-selection-border, #0d6efd);
+  border-radius: 3px;
+  background: var(--xl-react-bg, #ffffff);
+  color: var(--xl-react-text, #1f2328);
+  font: inherit;
+}
+
+.xl-react-sheet-tabbar__menu {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  padding: 4px 0;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 4px;
+  background: var(--xl-react-bg, #ffffff);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  font-size: 13px;
+}
+
+.xl-react-sheet-tabbar__menu--context {
+  /* Positioned with viewport (clientX/clientY) coords, so use `fixed` to
+   * resolve against the viewport rather than the absolute-positioned tab
+   * bar root. Otherwise the menu lands hundreds of pixels off when the
+   * grid is scrolled or not flush with the viewport. */
+  position: fixed;
+  margin-top: 0;
+}
+
+.xl-react-sheet-tabbar__menu--hidden-picker {
+  top: 100%;
+  left: 28px;
+  margin-top: 2px;
+}
+
+.xl-react-sheet-tabbar__menu--color {
+  top: 100%;
+  left: 0;
+  margin-top: 2px;
+  padding: 8px;
+}
+
+.xl-react-sheet-tabbar__menu-title {
+  padding: 4px 12px;
+  color: var(--xl-react-text-muted, #656d76);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.xl-react-sheet-tabbar__menu-item {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--xl-react-text, #1f2328);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.xl-react-sheet-tabbar__menu-item:hover:not(:disabled) {
+  background: var(--xl-react-header-selected-bg, #e7f0ff);
+}
+
+.xl-react-sheet-tabbar__menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.xl-react-sheet-tabbar__menu-item--danger {
+  color: #d4322f;
+}
+
+.xl-react-sheet-tabbar__menu-separator {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--xl-react-border-color, #d0d7de);
+}
+
+.xl-react-sheet-tabbar__swatches {
+  display: grid;
+  grid-template-columns: repeat(8, 18px);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.xl-react-sheet-tabbar__swatch {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--xl-react-border-color, #d0d7de);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.xl-react-sheet-tabbar__swatch:hover {
+  outline: 2px solid var(--xl-react-selection-border, #0d6efd);
+}
+
+/*
+ * §13 — View modes.
+ *
+ * `showGridlines = false` strips the cell right/bottom border colors so
+ * the grid renders as a borderless canvas. Selection, freeze separators,
+ * the header/gutter background separators, and any user-painted
+ * `CellBorder` formats remain unaffected.
+ */
+.xl-react-grid--no-gridlines .xl-react-grid__cell {
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+}
+
+/*
+ * `showHeaders = false` collapses the column header lane and row gutter
+ * visually via `visibility: hidden`. The reserved layout space stays
+ * (avoids touching virtualization offsets / hit-test math); host pages
+ * that want a true edge-to-edge effect can crop with an outer container.
+ * `pointer-events: none` removes hit targets so clicks that fall on the
+ * invisible header area don't trigger column-select or context-menu.
+ */
+.xl-react-grid--no-headers .xl-react-grid__header,
+.xl-react-grid--no-headers .xl-react-grid__row-gutter,
+.xl-react-grid--no-headers .xl-react-grid__corner {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/*
+ * Split-pane view (SplitPaneView). Outer wrapper is a CSS grid; each
+ * pane stretches its child to fill so an embedded XlReact picks up the
+ * pane's measured size via its existing `ResizeObserver` viewport hook.
+ */
+.xl-react-split-pane {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  gap: 0;
+  background: var(--xl-react-border-color, #d0d7de);
+}
+
+.xl-react-split-pane--none {
+  display: block;
+}
+
+.xl-react-split-pane--horizontal {
+  gap: 1px;
+}
+
+.xl-react-split-pane--vertical {
+  gap: 1px;
+}
+
+.xl-react-split-pane--quad {
+  gap: 1px;
+}
+
+.xl-react-split-pane__cell {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--xl-react-bg, #ffffff);
+  display: flex;
+}
+
+.xl-react-split-pane__cell > * {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* §10A pivot table styles. Imported by consumers that opt into the pivot
+ * module via `import 'xl-react/styles.css'` (currently a side-effect import). */
+
+.xl-pivot-builder {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 16px;
+  align-items: stretch;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 13px;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.xl-pivot-builder__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.xl-pivot-builder__sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 6px;
+}
+
+.xl-pivot-builder__sidebar-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.xl-pivot-builder__refresh {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 12px;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+
+.xl-pivot-builder__refresh:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.xl-pivot-builder__field-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 4px;
+}
+
+.xl-pivot-builder__field {
+  padding: 4px 8px;
+  cursor: grab;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.xl-pivot-builder__field:hover {
+  background: #f8fafc;
+}
+
+.xl-pivot-builder__field:last-child {
+  border-bottom: none;
+}
+
+.xl-pivot-builder__field-label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.xl-pivot-builder__trash {
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+  border: 1px dashed #cbd5e1;
+  border-radius: 4px;
+  padding: 6px;
+  background: #fff;
+}
+
+.xl-pivot-builder__areas {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.xl-pivot-builder__area {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 6px 8px;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.xl-pivot-builder__area h4 {
+  margin: 0;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.xl-pivot-builder__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 28px;
+}
+
+.xl-pivot-builder__empty {
+  font-size: 11px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.xl-pivot-builder__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 2px 6px 2px 10px;
+  font-size: 12px;
+  cursor: grab;
+  max-width: 100%;
+}
+
+.xl-pivot-builder__chip-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xl-pivot-builder__chip-remove {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.xl-pivot-builder__chip-remove:hover {
+  color: #1e40af;
+}
+
+.xl-pivot-builder__chip-badge {
+  /* §10A.5 — inline marker on the chip showing the active grouping unit
+     (e.g. "분기" or a numeric bin width). Subdued so the field label stays
+     the dominant text on the chip. */
+  color: #475569;
+  font-size: 11px;
+}
+
+.xl-pivot-builder__chip-grouping,
+.xl-pivot-builder__chip-sortfilter {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.xl-pivot-builder__chip-grouping:hover,
+.xl-pivot-builder__chip-sortfilter:hover {
+  color: #1e40af;
+}
+
+.xl-pivot-builder__grouping-popover {
+  /* Lives at the bottom of the area; full-width within the chip wrap so the
+     fieldset reads as belonging to the area that owns the focused chip. */
+  flex: 1 1 100%;
+  margin-top: 4px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.xl-pivot-builder__grouping-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.xl-pivot-builder__grouping-field {
+  color: #475569;
+  font-size: 11px;
+}
+
+.xl-pivot-builder__grouping-fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.xl-pivot-builder__grouping-fieldset legend {
+  font-weight: 600;
+  font-size: 11px;
+  color: #475569;
+  margin-bottom: 2px;
+}
+
+.xl-pivot-builder__grouping-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.xl-pivot-builder__grouping-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.xl-pivot-builder__grouping-input input {
+  width: 80px;
+  font-size: 12px;
+  padding: 2px 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+}
+
+.xl-pivot-builder__grouping-unsupported {
+  margin: 0;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.xl-pivot-builder__grouping-footer {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.xl-pivot-builder__grouping-footer button {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 12px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.xl-pivot-builder__grouping-footer button:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.xl-pivot-builder__sortfilter-popover {
+  /* §10A.6 — mirrors the grouping popover layout. Living inside the same area
+     wrapper keeps the controls grouped with the chip they configure. */
+  flex: 1 1 100%;
+  margin-top: 4px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.xl-pivot-builder__sortfilter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px dashed #e2e8f0;
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin: 0;
+}
+
+.xl-pivot-builder__sortfilter-section legend {
+  font-weight: 600;
+  font-size: 11px;
+  color: #475569;
+  padding: 0 4px;
+}
+
+.xl-pivot-builder__sortfilter-manual {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.xl-pivot-builder__sortfilter-manual-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 3px;
+}
+
+.xl-pivot-builder__sortfilter-manual-list li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.xl-pivot-builder__sortfilter-manual-list li:last-child {
+  border-bottom: none;
+}
+
+.xl-pivot-builder__sortfilter-manual-list button {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 0 4px;
+  line-height: 1.4;
+}
+
+.xl-pivot-builder__sortfilter-manual-list button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.xl-pivot-builder__sortfilter-include-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 6px;
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 3px;
+}
+
+.xl-pivot-builder__sortfilter-include-list label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.xl-pivot-builder__agg-select,
+.xl-pivot-builder__value-display-select {
+  font-size: 11px;
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.xl-pivot-builder__value-display-select {
+  /* §10A.4 — slightly tinted so the two dropdowns inside a value chip read
+     as distinct controls instead of bleeding together visually. */
+  background: #f8fafc;
+}
+
+.xl-pivot-builder__options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 8px;
+  font-size: 12px;
+}
+
+.xl-pivot-builder__option {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* §10A.7 P1 — layout panel (subtotal position / report layout / empty cell). */
+.xl-pivot-builder__layout {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px dashed #e2e8f0;
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.xl-pivot-builder__layout legend {
+  font-weight: 600;
+  font-size: 11px;
+  color: #475569;
+  padding: 0 4px;
+}
+
+.xl-pivot-builder__layout-row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 6px;
+  align-items: center;
+}
+
+.xl-pivot-builder__layout-row select {
+  font-size: 12px;
+  padding: 2px 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+  background: #fff;
+}
+
+.xl-pivot-builder__main {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.xl-pivot-builder__grid {
+  flex: 1 1 auto;
+  min-height: 200px;
+}
+
+.xl-pivot-builder__empty-result {
+  color: #94a3b8;
+  font-style: italic;
+  padding: 24px 16px;
+  text-align: center;
+  margin: 0;
+}
+
+/* §10A.9 P1 — show-details modal */
+.xl-pivot-builder__details-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.xl-pivot-builder__details-modal {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.25);
+  width: min(960px, 92vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+
+.xl-pivot-builder__details-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.xl-pivot-builder__details-header > div {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.xl-pivot-builder__details-header strong {
+  font-size: 14px;
+}
+
+.xl-pivot-builder__details-crumbs {
+  font-size: 12px;
+  color: #64748b;
+  font-family: ui-monospace, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xl-pivot-builder__details-count {
+  font-size: 12px;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.xl-pivot-builder__details-close {
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.xl-pivot-builder__details-close:hover {
+  background: #e2e8f0;
+}
+
+.xl-pivot-builder__details-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  min-height: 0;
+}
+
+.xl-pivot-builder__details-empty {
+  margin: 0;
+  padding: 32px 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.xl-pivot-builder__details-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.xl-pivot-builder__details-table thead th {
+  position: sticky;
+  top: 0;
+  background: #f1f5f9;
+  text-align: left;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-bottom: 1px solid #cbd5e1;
+  white-space: nowrap;
+}
+
+.xl-pivot-builder__details-table tbody td {
+  padding: 4px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
+}
+
+.xl-pivot-builder__details-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+/* §10A.6 P2 — Slicer + Timeline */
+
+.xl-pivot-slicer,
+.xl-pivot-timeline {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.xl-pivot-slicer__header,
+.xl-pivot-timeline__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.xl-pivot-slicer__title,
+.xl-pivot-timeline__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.xl-pivot-slicer__toolbar,
+.xl-pivot-timeline__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.xl-pivot-slicer__toolbar-button,
+.xl-pivot-timeline__reset {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.xl-pivot-slicer__toolbar-button:hover:not(:disabled),
+.xl-pivot-timeline__reset:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.xl-pivot-slicer__toolbar-button:disabled,
+.xl-pivot-timeline__reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.xl-pivot-slicer__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.xl-pivot-slicer__chip {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #475569;
+  cursor: pointer;
+  transition:
+    background 80ms ease,
+    color 80ms ease,
+    border-color 80ms ease;
+}
+
+.xl-pivot-slicer__chip:hover {
+  background: #e2e8f0;
+}
+
+.xl-pivot-slicer__chip.is-active {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+
+.xl-pivot-slicer--orphan .xl-pivot-slicer__warning,
+.xl-pivot-timeline--orphan .xl-pivot-timeline__warning {
+  margin: 0;
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+.xl-pivot-timeline__zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.xl-pivot-timeline__zoom select {
+  font-size: 12px;
+  padding: 2px 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.xl-pivot-timeline__strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.xl-pivot-timeline__bucket {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: #475569;
+  cursor: pointer;
+  min-width: 56px;
+  transition:
+    background 80ms ease,
+    color 80ms ease,
+    border-color 80ms ease;
+}
+
+.xl-pivot-timeline__bucket:hover {
+  background: #e2e8f0;
+}
+
+.xl-pivot-timeline__bucket.is-active {
+  background: #0ea5e9;
+  border-color: #0284c7;
+  color: #fff;
+}
+
+.xl-pivot-timeline__empty {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* §10A.10 P2 — pivot chart (막대 / 선 / 원형) */
+.xl-pivot-chart {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 12px;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+.xl-pivot-chart__title {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.xl-pivot-chart__empty {
+  margin: 0;
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+  padding: 24px 8px;
+  text-align: center;
+}
+
+.xl-pivot-chart__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.xl-pivot-chart__bar {
+  transition: opacity 80ms ease;
+}
+
+.xl-pivot-chart__bar:hover,
+.xl-pivot-chart__slice:hover {
+  opacity: 0.85;
+}
+
+.xl-pivot-chart__line {
+  fill: none;
+}
+
+.xl-pivot-chart__line-point {
+  transition: r 80ms ease;
+}
+
+.xl-pivot-chart__line-point:hover {
+  r: 5;
+}
+
+.xl-pivot-chart__tick-label,
+.xl-pivot-chart__category-label,
+.xl-pivot-chart__legend-label,
+.xl-pivot-chart__legend-overflow {
+  font-size: 11px;
+  fill: #475569;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.xl-pivot-chart__legend-overflow {
+  fill: #94a3b8;
+  font-style: italic;
+}
+
+/* Print module (§12, OUT-25) styles.
+ *
+ * Two roles:
+ *   - On-screen modal preview (`.xl-react-print-modal`).
+ *   - `@media print` rules that hide everything except the preview
+ *     pages and let each `.xl-react-print-page` carry an Excel-faithful
+ *     page break.
+ *
+ * Stays scoped to `xl-react-print-*` selectors so it never collides
+ * with consumer chrome. */
+
+.xl-react-print-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.xl-react-print-modal {
+  background: #f6f7f9;
+  border-radius: 8px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+  width: min(1240px, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+  font:
+    13px/1.4 system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  color: #1f2937;
+}
+
+.xl-react-print-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 8px 8px 0 0;
+}
+
+.xl-react-print-modal__header h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.xl-react-print-modal__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.xl-react-print-modal__actions button {
+  font: inherit;
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  cursor: pointer;
+}
+
+.xl-react-print-modal__actions button:hover {
+  background: #f3f4f6;
+}
+
+.xl-react-print-modal__btn-primary {
+  background: #2563eb !important;
+  border-color: #1d4ed8 !important;
+  color: #fff;
+}
+
+.xl-react-print-modal__btn-primary:hover {
+  background: #1d4ed8 !important;
+}
+
+.xl-react-print-modal__body {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.xl-react-print-modal__settings {
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  padding: 14px;
+  overflow-y: auto;
+}
+
+.xl-react-print-modal__settings fieldset {
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 8px 10px 10px;
+  margin: 0 0 10px;
+}
+
+.xl-react-print-modal__settings legend {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  padding: 0 6px;
+}
+
+.xl-react-print-modal__settings input[type='text'],
+.xl-react-print-modal__settings input[type='number'],
+.xl-react-print-modal__settings select {
+  font: inherit;
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+
+.xl-react-print-modal__settings label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.xl-react-print-modal__row {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.xl-react-print-modal__row label {
+  margin-top: 0;
+}
+
+.xl-react-print-modal__scale {
+  margin-top: 8px;
+}
+
+.xl-react-print-modal__scale input {
+  width: 80px !important;
+}
+
+.xl-react-print-modal__margins {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.xl-react-print-modal__margins label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-top: 0;
+}
+
+.xl-react-print-modal__margins span {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.xl-react-print-modal__zones {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.xl-react-print-modal__zones label {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-top: 0;
+}
+
+.xl-react-print-modal__zones span {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.xl-react-print-modal__hint {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.xl-react-print-modal__pages {
+  background: #e2e8f0;
+  padding: 18px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.xl-react-print-page {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.xl-react-print-page[data-active='true'] {
+  outline: 2px solid #2563eb;
+}
+
+.xl-react-print-page__header,
+.xl-react-print-page__footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  font-size: 11px;
+  color: #475569;
+  flex: 0 0 auto;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.xl-react-print-page__footer {
+  border-bottom: none;
+  border-top: 1px dashed #e5e7eb;
+  margin-top: auto;
+}
+
+.xl-react-print-page__header span[data-zone='left'],
+.xl-react-print-page__footer span[data-zone='left'] {
+  text-align: left;
+}
+
+.xl-react-print-page__header span[data-zone='center'],
+.xl-react-print-page__footer span[data-zone='center'] {
+  text-align: center;
+}
+
+.xl-react-print-page__header span[data-zone='right'],
+.xl-react-print-page__footer span[data-zone='right'] {
+  text-align: right;
+}
+
+.xl-react-print-page__body {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.xl-react-print-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.xl-react-print-table th,
+.xl-react-print-table td {
+  padding: 2px 6px;
+  vertical-align: top;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xl-react-print-table[data-gridlines] th,
+.xl-react-print-table[data-gridlines] td {
+  border: 1px solid #d1d5db;
+}
+
+.xl-react-print-table[data-headers] thead th,
+.xl-react-print-table[data-headers] tbody th {
+  background: #f1f5f9;
+  font-weight: 600;
+  color: #475569;
+}
+
+.xl-react-print-table tr[data-repeat='true'] {
+  background: #fefce8;
+}
+
+.xl-react-print-modal__footer {
+  padding: 8px 18px;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+  font-size: 12px;
+  color: #64748b;
+  border-radius: 0 0 8px 8px;
+}
+
+/* ── Page-break preview overlay (§12 "페이지 나누기 미리보기") ────────── */
+.xl-react-print-pagebreaks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.xl-react-print-pagebreak {
+  position: absolute;
+  background: transparent;
+  border: 0 dashed #2563eb;
+}
+
+.xl-react-print-pagebreak[data-axis='row'] {
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top-width: 2px;
+}
+
+.xl-react-print-pagebreak[data-axis='col'] {
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left-width: 2px;
+}
+
+/* ── Print media — hide the modal chrome, paginate native ────────────── */
+@media print {
+  body.xl-react-printing > *:not(.xl-react-print-modal__backdrop) {
+    display: none !important;
+  }
+
+  .xl-react-print-modal__backdrop {
+    position: static;
+    background: none;
+    padding: 0;
+    z-index: auto;
+  }
+
+  .xl-react-print-modal {
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .xl-react-print-modal__header,
+  .xl-react-print-modal__settings,
+  .xl-react-print-modal__footer {
+    display: none !important;
+  }
+
+  .xl-react-print-modal__body {
+    grid-template-columns: 1fr;
+  }
+
+  .xl-react-print-modal__pages {
+    background: transparent;
+    padding: 0;
+    gap: 0;
+    align-items: stretch;
+    overflow: visible;
+  }
+
+  .xl-react-print-page {
+    box-shadow: none;
+    page-break-after: always;
+    break-after: page;
+    outline: none !important;
+  }
+
+  .xl-react-print-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  /* Hide the on-screen modal toolbar focus ring etc. */
+  .xl-react-print-modal *:focus {
+    outline: none !important;
+  }
+}

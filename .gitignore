@@ -1,0 +1,6 @@
+# dist/ is intentionally committed: this repo mirrors the published npm package.
+node_modules/
+*.log
+*.tgz
+.DS_Store
+.npmrc

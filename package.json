@@ -1,0 +1,71 @@
+{
+  "name": "hyper-xl",
+  "version": "0.1.0",
+  "description": "Excel-like grid component library for React. Bring your own cell renderers; keep the spreadsheet engine out of your app.",
+  "type": "module",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "HyperEZ Inc. <ai@hyperez.io>",
+  "homepage": "https://github.com/HyperEZ/hyper-xl#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HyperEZ/hyper-xl.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HyperEZ/hyper-xl/issues"
+  },
+  "keywords": [
+    "react",
+    "grid",
+    "data-grid",
+    "datagrid",
+    "excel",
+    "spreadsheet",
+    "table",
+    "xlsx",
+    "exceljs",
+    "pivot"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./exceljs": {
+      "types": "./dist/exceljs.d.ts",
+      "import": "./dist/exceljs.js"
+    },
+    "./pivot/presets": {
+      "types": "./dist/pivot-presets.d.ts",
+      "import": "./dist/pivot-presets.js"
+    },
+    "./styles.css": "./dist/index.css",
+    "./themes/light.css": "./dist/themes/light.css"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "exceljs": "^4.4.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "exceljs": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

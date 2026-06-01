@@ -1,0 +1,16 @@
+/*
+ * xl-react light theme.
+ * Import as: import 'xl-react/themes/light.css';
+ * Applies CSS variable values consumed by the grid component.
+ */
+:root {
+  --xl-react-bg: #ffffff;
+  --xl-react-text: #1f2328;
+  --xl-react-text-muted: #656d76;
+  --xl-react-border-color: #d0d7de;
+  --xl-react-row-stripe: #f6f8fa;
+  --xl-react-header-bg: #f6f8fa;
+  --xl-react-header-text: #1f2328;
+  --xl-react-selection-bg: rgba(13, 110, 253, 0.12);
+  --xl-react-selection-border: #0d6efd;
+}

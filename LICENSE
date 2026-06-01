@@ -1,0 +1,91 @@
+HyperEZ Source-Available License — hyper-xl
+Copyright (c) 2026 HyperEZ Inc. (주식회사 하이퍼이지). All rights reserved.
+
+요약(비공식): 평가·학습·비상업 용도로는 자유롭게 사용할 수 있습니다. 상업적/
+프로덕션 용도로 사용하려면 반드시 별도의 상업용 라이선스를 문의해야 합니다.
+문의: ai@hyperez.io
+
+This license governs use of the accompanying software distributed under the
+npm package name "hyper-xl" and from https://github.com/HyperEZ/hyper-xl (the
+"Software"). By installing, copying, accessing, or otherwise using the
+Software, you agree to be bound by the terms below. If you do not agree, do
+not use the Software.
+
+1. DEFINITIONS
+   1.1 "Licensor" means HyperEZ Inc. (주식회사 하이퍼이지), the owner of the
+       Software.
+   1.2 "You" means the individual or legal entity exercising rights under this
+       license.
+   1.3 "Non-Commercial Use" means use for personal study, evaluation, testing,
+       experimentation, academic research, or internal proof-of-concept work
+       that is not part of, and is not intended to become part of, any product,
+       service, or activity that is offered for sale, generates revenue, or is
+       used in the operation of a business.
+   1.4 "Commercial Use" means any use that is not Non-Commercial Use, including
+       but not limited to use in production, in a paid or revenue-generating
+       product or service, in software distributed to customers, or in the
+       internal business operations of a for-profit organization.
+
+2. GRANT FOR EVALUATION AND NON-COMMERCIAL USE
+   Subject to your compliance with this license, the Licensor grants you a
+   worldwide, royalty-free, non-exclusive, non-transferable, non-sublicensable,
+   revocable license to download, install, and use the Software solely for
+   Non-Commercial Use.
+
+3. COMMERCIAL USE REQUIRES A SEPARATE LICENSE
+   No rights are granted for Commercial Use under this file. Any Commercial Use
+   of the Software requires a separate written commercial license agreement
+   with the Licensor. To obtain a commercial license, contact ai@hyperez.io.
+
+4. RESTRICTIONS
+   Except to the extent the following restrictions are prohibited by applicable
+   mandatory law, you shall not:
+   (a) use the Software for Commercial Use without a valid commercial license;
+   (b) reverse engineer, decompile, disassemble, deobfuscate, or otherwise
+       attempt to derive the source code, underlying algorithms, or internal
+       structure of the distributed (minified/obfuscated) Software;
+   (c) redistribute, resell, sublicense, rent, lease, or host the Software, in
+       whole or in part, as a standalone product or as a component of a product
+       whose primary value is the Software;
+   (d) remove, alter, or obscure any copyright, license, or attribution notice;
+       or
+   (e) use the Licensor's names, logos, or trademarks except as required for
+       reasonable and customary attribution.
+
+5. OWNERSHIP
+   The Software is licensed, not sold. The Licensor and its licensors retain
+   all right, title, and interest in and to the Software, including all
+   intellectual property rights. No rights are granted except as expressly set
+   out in this license.
+
+6. THIRD-PARTY COMPONENTS
+   The Software may interoperate with third-party software (for example, React
+   and, optionally, ExcelJS) that is licensed separately by its respective
+   owners. This license does not grant any rights in such third-party software.
+
+7. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTY OF ANY
+   KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND
+   NON-INFRINGEMENT.
+
+8. LIMITATION OF LIABILITY
+   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL THE
+   LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR
+   PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, REVENUE, DATA, OR GOODWILL,
+   ARISING OUT OF OR RELATED TO THE USE OF OR INABILITY TO USE THE SOFTWARE.
+
+9. TERMINATION
+   This license terminates automatically if you breach any of its terms. Upon
+   termination, you must stop using and delete all copies of the Software.
+   Sections 4 through 11 survive termination.
+
+10. GOVERNING LAW
+    This license is governed by the laws of the Republic of Korea, without
+    regard to its conflict-of-laws rules. The courts located in Seoul, Republic
+    of Korea shall have exclusive jurisdiction over any dispute arising from or
+    related to this license.
+
+11. CONTACT
+    HyperEZ Inc. (주식회사 하이퍼이지)
+    Commercial licensing and all inquiries: ai@hyperez.io
